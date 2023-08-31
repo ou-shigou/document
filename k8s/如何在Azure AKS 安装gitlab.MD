@@ -31,7 +31,18 @@ helm pull  gitlab/gitla
 ```
 下载后的Chart是一个tar文件，解压后即可得到Chart仓库，如下图所示
 ![img.png](img/img.png)  
-此时我们对Gitlab以来的组件下的values.yaml进行修改即可，修改后，通过指令
+此时我们对Gitlab以来的组件下的values.yaml进行修改即可
+#### 1. 修改value.yaml
+- 修改value.yaml gitlab 版本![img.png](img.png)
+- 修改github的replication数量
+![img_1.png](img_1.png)
+#### 2. 修改github webservie 
+webservice 是github的主程序的后台，所以主要针对其进行修改
+![img_2.png](img_2.png)
+#### 3. 其他的依赖我们可以酌情进行修改， 一般是将资源调小
+![img_3.png](img_3.png)
+
+修改后，在gitlab chart 项目目录下通过指令进行发布
 ```
 helm install my-gitlab . 
 ```
