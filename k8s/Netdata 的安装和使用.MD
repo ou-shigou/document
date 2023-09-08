@@ -20,13 +20,13 @@ helm install my-netdata netdata/netdata --version 3.7.69
 如果要自定义设置的话可以参考这篇文章 ([Helm使用自定义Chart模板来部署k8s应用](https://www.boysec.cn/boy/f6e04248.html)) 
 对`Netdata`进行自定义。  
 我们通过查看`Lens`的Deployments来查看是否安装好
-![img.png](img-netdata/img.png)
+![img.png](img/img-netdata/img.png)
 #### Netdata的访问
 安装好 `Netdata` 之后如果没有设置IP访问（`LoadBalancer`）此我们可以使用Lens的跳转功能
 （类似反向代理） 如下图所示
-![img_1.png](img-netdata/img_1.png)
-在弹出的窗口中选择Start
-![img_2.png](img-netdata/img_2.png)
+![img_1.png](img/img-netdata/img_1.png)
+在弹出的窗口中选择Start  
+![img_2.png](img/img-netdata/img_2.png)  
 会重新随机使用端口从本地访问Netdata
 ![img_3.png](img/img_3.png)
 

@@ -29,23 +29,31 @@ helm install my-gitlab -f value-gitlab.yml   --namespace gitlab
 ```
 helm pull  gitlab/gitla
 ```
-下载后的Chart是一个tar文件，解压后即可得到Chart仓库，如下图所示
+下载后的Chart是一个tar文件，解压后即可得到Chart仓库，如下图所示  
 ![img.png](img/img.png)  
 此时我们对Gitlab以来的组件下的values.yaml进行修改即可
 #### 1. 修改value.yaml
-- 修改value.yaml gitlab 版本![img.png](img.png)
+- 修改value.yaml gitlab 版本![img.png](img/img-gitlab/img.png)
 - 修改github的replication数量
-![img_1.png](img_1.png)
+![img_1.png](img/img-gitlab/img_1.png)
 #### 2. 修改github webservie 
-webservice 是github的主程序的后台，所以主要针对其进行修改
-![img_2.png](img_2.png)
+webservice 是github的主程序的后台，所以主要针对其进行修改，但是它需要的内存容量比较大，这里我们建议不要做调整，不然POD会OOM
+![img_2.png](img/img-gitlab/img_2.png)
 #### 3. 其他的依赖我们可以酌情进行修改， 一般是将资源调小
-![img_3.png](img_3.png)
+![img_3.png](img/img-gitlab/img_3.png)
 
 修改后，在gitlab chart 项目目录下通过指令进行发布
 ```
-helm install my-gitlab . 
+helm install my-gitlab . --namespace gitlab
 ```
 其中点代表当下目录的chart，会自动的运行安装最后结果如下所示
 ![img_1.png](img/img_1.png)
-![img_2.png](img/img_2.png)
+###  如何访问已经发布的gitlab
+由于Gitlab的安全设置，必须用Https访问，所以必须要设置域名
+假设我们没有设置域名，那么此时我们只能通过K8s的proxy功能进行访问
+#### 1. 首先进入lens的NetWork下的Service选项卡查看当前gitlab的IP地址 如下图所示（主要查看Gitlab 的Nginx）
+![img.png](img/img-gitlab/1/img.png)
+将IP和你在gitlab value.yaml中配置的网址写入到本地的Hosts文件中，模拟DNS跳转
+![img_1.png](img/img-gitlab/1/img_1.png)
+然后在网页上访问
+![img_2.png](img/img-gitlab/1/img_2.png)
