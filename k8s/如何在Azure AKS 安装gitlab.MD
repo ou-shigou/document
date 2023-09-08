@@ -53,7 +53,7 @@ helm install my-gitlab . --namespace gitlab
 假设我们没有设置域名，那么此时我们只能通过K8s的proxy功能进行访问
 #### 1. 首先进入lens的NetWork下的Service选项卡查看当前gitlab的IP地址 如下图所示（主要查看Gitlab 的Nginx）
 ![img.png](img/img-gitlab/1/img.png)
-将IP和你在gitlab value.yaml中配置的网址写入到本地的Hosts文件中，模拟DNS跳转
-![img_1.png](img/img-gitlab/1/img_1.png)
-然后在网页上访问
+将IP和你在gitlab value.yaml中配置的网址写入到本地的Hosts文件中，模拟DNS跳转  
+![img_1.png](img/img-gitlab/1/img_1.png)  
+然后在网页上访问  
 ![img_2.png](img/img-gitlab/1/img_2.png)
