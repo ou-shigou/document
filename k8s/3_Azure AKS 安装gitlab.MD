@@ -25,10 +25,12 @@ helm install my-gitlab -f value-gitlab.yml   --namespace gitlab
 ```
 ### 自定义你的Charts
 如果我们要更进一步 修改Gitlab 的 某些依赖，比如CPU Redis 等， 那么需要进行如下操作
-下载 Gitlab的Chart到本地
+下载 Gitlab的Chart到本地, 
 ```
 helm pull  gitlab/gitla
 ```
+我已经维护一份备份在Github上 https://github.com/ITC-cloud-soft/helm 可以下载下来之后直接使用
+
 下载后的Chart是一个tar文件，解压后即可得到Chart仓库，如下图所示  
 ![img.png](img/img.png)  
 此时我们对Gitlab以来的组件下的values.yaml进行修改即可
