@@ -24,7 +24,7 @@ helm install gitlab gitlab/gitlab \
 helm install my-gitlab -f value-gitlab.yml   --namespace gitlab
 ```
 ### 自定义你的Charts
- 如果我们要更进一步 修改Gitlab 的 某些依赖，比如CPU Redis 等， 那么需要进行如下操作
+如果我们要更进一步 修改Gitlab 的 某些依赖，比如CPU Redis 等， 那么需要进行如下操作
 下载 Gitlab的Chart到本地
 ```
 helm pull  gitlab/gitla
