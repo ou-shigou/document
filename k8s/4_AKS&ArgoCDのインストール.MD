@@ -1,9 +1,9 @@
 AKS&ArgoCDのインストール
 ---
-### 目录
-- [AKSのインストール＆設定](#AKSのインストール＆設定)
-- [ArgoCDのインストール＆設定](#ArgoCDのインストール＆設定)
-### AKSのインストール＆設定
+### 目次
+- [AKSのインストール設定](#AKSのインストール設定)
+- [ArgoCDのインストール設定](#ArgoCDのインストール設定)
+### AKSのインストール設定
 #### ①リソース グループ作成
 ```
 az group create --name saas-core --location japaneast
