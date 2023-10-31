@@ -65,9 +65,12 @@ def create_commodity_csv(total, order_id, pk, work_id):
             "FK_NY": "2023-10",
             "EndJSON": "0",
         }
+        #
 
-        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False)
+        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False).replace("\"", "\\\"")
+
         line = f"'{MyPK1}','1','発送','0',{item_OID},'101','新規申請','102','上司承認','0543956','真洲句 優祈音','0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0','','','@SendNode=101','(0543956,真洲句 優祈音)','{item_frmb_str}'"
+        line = line.replace("'", "\"")
         nd1track01.writelines(line + "\n")
 
         # tt_wf_merchandise_plan的数据写入
@@ -83,7 +86,8 @@ def create_commodity_csv(total, order_id, pk, work_id):
                 {"value": "発送", "name": "進行ステータス"},
             ],
         }
-        item_summry_str = json.dumps(item_summry, ensure_ascii=False)
+        item_summry_str = json.dumps(item_summry, ensure_ascii=False).replace('"', '\\"')
+
         now = datetime.now()
         formatted_now = now.strftime('%Y-%m-%d %H:%M:%S')
         formatted_now_short = now.strftime('%Y-%m-%d %H:%M')
@@ -96,7 +100,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
             f"'0543956','1','0','','','','','','','',"
             f"'{formatted_now_short}','102','{formatted_now_short}','0','0543956','0543956','2023-10'"
         )
-
+        line = line.replace("'",'"')
         ts3.writelines(line + "\n")
 
         # wf_generworkerlistのデータを書き込む
@@ -110,6 +114,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
         line = f"'{item_OID}','0543956','101','0','真洲句 優祈音','新規申請','001','11637','無'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},''1','0','1','0','','1','0','','','0','','',''"
+        line = line.replace("'",'"')
         ts4.writelines(line + "\n")
 
         # wf_generworkflow的数据写入
@@ -128,7 +133,9 @@ def create_commodity_csv(total, order_id, pk, work_id):
             f"'0220320,駄御井進;',1,'0','{item_02}','@0543956,真洲句 優祈音@','','2023-10',"
             f"'0','0','0','','',''"
         )
+        line = line.replace("'",'"')
         ts5.writelines(line + '\n')
+    return item_OID
 
 
 # 入荷返品申請
@@ -145,6 +152,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
     writer5 = ts5
 
     for i in range(1, total + 1):
+        work_id  +=1
         item_OID += 1
         int_ordernum2 += 1
         MyPK2 += 1
@@ -161,35 +169,41 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
                      f'真洲句 優祈音は2023-10-05 17:22で開始.", "OID": {item_OID}, "FK_Dept": "11637", "Emps": "0543956", '
                      f'"FID": "0", "FK_NY": "2023-10", "EndJSON": "0"}}')
 
-        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False)
+        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False).replace('"', '\"')
         line = (
             f"'{MyPK2}','1','発送','0','{item_OID}','501','新規申請','502','上司承認','0543956','真洲句 優祈音',"
             f"'0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0','','',"
-            f"'@SendNode=101','(0543956,真洲句 優祈音)','{item_frmb}'")
+            f"'@SendNode=101','(0543956,真洲句 優祈音)',{item_frmb_str}").replace("\'", "\"")
         writer2.writelines(line + '\n')
 
         # 3 tt_wf_arrival_returns
-        item_summry = (f'{{"AgentMode": "0", "AutoApprovalMode": "N", "content": ['
-                       f'{{"value": "高田　優祈音", "name": "従業員氏名"}}, '
-                       f'{{"value": "0543956", "name": "社員番号"}}, '
-                       f'{{"value": "イオンアイビス（株）", "name": "会社名称"}}, '
-                       f'{{"value": "ＤＸシステム開発Ｇ", "name": "所属"}}]}}')
+        item_summry = {
+            "AgentMode": "0",
+            "AutoApprovalMode": "N",
+            "content": [
+                {"value": "高田　優祈音", "name": "従業員氏名"},
+                {"value": "0543956", "name": "社員番号"},
+                {"value": "イオンアイビス（株）", "name": "会社名称"},
+                {"value": "ＤＸシステム開発Ｇ", "name": "所属"}
+            ]
+        }
 
+        item_summry_str = json.dumps(item_summry, ensure_ascii=False).replace('"', '\\"')
         item_title = f"'ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は{datetime.now().strftime('%Y-%m-%d %H:%M')}で開始.'"
 
         line = f"'{item_OID}','イオンアイビス（株）','ＤＸシステム開発Ｇ','0543956','高田　優祈音'," \
                f"'111','test','A01','test','入荷返品テスト（王）{i}'," \
                f"'入荷日,仕入伝票No.,返品理由コード,商品名,型番,JANコード,数量,原単価,売単価,総原価,総売価 ?'," \
-               f"'','','','{item_summry}'," \
+               f"'','','','{item_summry_str}'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','2','11637',{item_title}," \
-               f"'0','',502,0,'','真洲句 優祈音'," \
+               f"'0','','502','0','','真洲句 優祈音'," \
                f"'{datetime.now().strftime('%Y-%m-%d')}','ＤＸシステム開発Ｇ'," \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}',0," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}','0'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}','0543956','0543956','1','0','','','','','','',''," \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',502,'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','502','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'," \
                f"'0','0543956','0543956','2023-10'"
-
+        line = line.replace("'", '"')
         writer3.writelines(line + '\n')
 
         # 4. wf_generworkerlist
@@ -230,6 +244,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
             "'',"
             "'@FK_DeptT=デジタルＳ本部長'"
         )
+        line = line.replace("'", '"')
         writer4.writelines(line + '\n')
 
         line = (
@@ -246,6 +261,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','1','0','1','0','','1','0','','','0','','',''"
         )
+        line = line.replace("'",'"')
         writer4.writelines(line + '\n')
 
         # wf_generworkflow
@@ -262,7 +278,9 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
             f"'{dd}','502','上司承認','11637','ＤＸシステム開発Ｇ','1',"
             f"'{dd}','','','','0','0','0','','','','','','0220320,駄御井進;','1','0','{item_02}','@0543956,真洲句 優祈音@','','2023-10','0','0','0','','',''"
         )
+        line = line.replace("'",'"')
         writer5.writelines(line + '\n')
+    return item_OID;
 
 
 # 在庫調整
@@ -279,6 +297,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
 
         # 1.tt_wf_order_numberのデータを書き込む
         line = f"'{item_OID}','007','{datetime.now().strftime('%Y%m%d')}','{item_ordernum3}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
+        line = line.replace("'", '"')
         ts1.writelines(line + '\n')
 
         # 2.nd7trackのデータを書き込む
@@ -301,14 +320,11 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             "EndJSON": "0"
         }
 
-        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False)
-        # line = (f"{MyPK3},1,発送,0,{item_OID},"
-        #         f"701,新規申請,702,上司承認,0543956,真洲句 優祈音,0220320,駄御井 進,"
-        #         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},0,'','@SendNode=701','(0543956,真洲句 優祈音)','{item_frmb_str}'")
+        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False).replace('"', '\\"')
         line = (
             f"'{MyPK3}','1','発送','0','{item_OID}','701','新規申請','702','上司承認','0543956','真洲句 優祈音',"
             f"'0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0','','',"
-            f"'@SendNode=701','(0543956,真洲句 優祈音)','{item_frmb_str}'")
+            f"'@SendNode=701','(0543956,真洲句 優祈音)','{item_frmb_str}'").replace("'", '"')
         ts32.writelines(line + '\n')
 
         # 3 tt_wf_stock_adjustmentのデータを書き込む
@@ -334,7 +350,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
                 }
             ]
         }
-        item_frmb_str = json.dumps(item_summary, ensure_ascii=False)
+        item_frmb_str = json.dumps(item_summary, ensure_ascii=False).replace('"', '\\"')
         item_title = f"ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は{datetime.now().strftime('%Y-%m-%d %H:%M')}で開始."
         line = (
             f"'{item_OID}',"
@@ -366,8 +382,8 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'0543956',"
             f"'1',"
             f"'0','','','','','','','','2023-10-19 09:31:49','702','2023-10-19 09:31:49','0','0543956','0543956','2023-10'"
-
         )
+        line = line.replace("'", '"')
         ts33.writelines(line + '\n')
         # 4   wf_generworkerlistのデータを書き込む
         current_datetime = datetime.now()
@@ -403,6 +419,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'',"
             f"'@FK_DeptT=デジタルＳ本部長'"
         )
+        line = line.replace("'", '"')
         ts4.writelines(line + '\n')
 
         # Calculate the current date and time
@@ -422,6 +439,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'{now.strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'1','0','1','0','','1','0','','','0','','',''"
         )
+        line = line.replace("'", '"')
         ts4.writelines(line + '\n')
 
         # 5. wf_generworkflowのデータを書き込む
@@ -472,7 +490,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'0',"
             f"'0','','',''"
         )
-
+        line = line.replace("'",'"')
         ts5.writelines(line + '\n')
 
 
@@ -502,10 +520,10 @@ def main():
     store_pk = int(args[8])
 
     # 1.商品計画申請　100, 'MEP202350000001', 1
-    create_commodity_csv(total, commodity_order_id, commodity_pk, work_id)
+    work_id = create_commodity_csv(total, commodity_order_id, commodity_pk, work_id)
 
     # 2. 入荷返品申請 100, 'ALRT202350000001', 1, 1
-    create_chargeback_csv(total, chargeback_order_id, chargeback_pk , work_id)
+    work_id = create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id)
 
     # 3. 在庫調整    100, 'SKAT202350000001', 1, 1
     create_store_csv(total, store_order_id, store_pk, work_id)
