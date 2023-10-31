@@ -14,7 +14,7 @@ def open_or_create_file(file_path, mode):
         return open(file_path, "w")
 
 
-out_path1 = os.path.join(os.getcwd(), 'csv')
+out_path1 = os.path.join(os.getcwd(), '/opt/csvdata/test')
 print("当前文件夹路径:", out_path1)
 ts1 = open_or_create_file(os.path.join(out_path1, "tt_wf_order_number01.csv"), "a")
 nd1track01 = open_or_create_file(os.path.join(out_path1, "nd1track01.csv"), "a")
