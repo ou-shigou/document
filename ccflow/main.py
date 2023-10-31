@@ -45,6 +45,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
 
         # tt_wf_order_number的数据写入
         line = f"'{item_OID}','001','{datetime.now().strftime('%Y%m%d')}','{item_ordernum1}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
+        line = line.replace("'",'"')
         ts1.writelines(line + '\n')
 
         # nd1track的数据写入
@@ -131,7 +132,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
             f"'真洲句 優祈音','0543956','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'{dd}','102','上司承認','11637','ＤＸシステム開発Ｇ','1',"
             f"'{dd}','','','','0','0','0','','','','','',"
-            f"'0220320,駄御井進;',1,'0','{item_02}','@0543956,真洲句 優祈音@','','2023-10',"
+            f"'0220320,駄御井進;','1','0','{item_02}','@0543956,真洲句 優祈音@','','2023-10',"
             f"'0','0','0','','',''"
         )
         line = line.replace("'",'"')
@@ -161,6 +162,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
 
         # 1. tt_wf_order_number
         line = f"'{item_OID}','005','{datetime.now().strftime('%Y%m%d')}','{item_ordernum2}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
+        line = line.replace("'",'"')
         writer1.writelines(line + '\n')
 
         # 2. nd5track
