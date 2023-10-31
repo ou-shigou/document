@@ -1,6 +1,7 @@
 # 1. execute pip install
 import os
 import sys
+import json
 
 import csv
 from datetime import datetime, timedelta
@@ -65,7 +66,8 @@ def create_commodity_csv(total, order_id, pk, work_id):
             "EndJSON": "0",
         }
 
-        line = f"'{MyPK1}',1,'発送',0,'{item_OID}',101,'新規申請',102,'上司承認','0543956','真洲句 優祈音','0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',0.0,'','@SendNode=101','(0543956,真洲句 優祈音)',{item_frmb}"
+        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False)
+        line = f"'{MyPK1}','1','発送','0',{item_OID},'101','新規申請','102','上司承認','0543956','真洲句 優祈音','0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0','','','@SendNode=101','(0543956,真洲句 優祈音)','{item_frmb_str}'"
         nd1track01.writelines(line + "\n")
 
         # tt_wf_merchandise_plan的数据写入
@@ -81,14 +83,14 @@ def create_commodity_csv(total, order_id, pk, work_id):
                 {"value": "発送", "name": "進行ステータス"},
             ],
         }
-        item_summry_str = repr(item_summry)
+        item_summry_str = json.dumps(item_summry, ensure_ascii=False)
         now = datetime.now()
         formatted_now = now.strftime('%Y-%m-%d %H:%M:%S')
-        formatted_now_short = now.strftime('%Y%m%d %H:%M')
+        formatted_now_short = now.strftime('%Y-%m-%d %H:%M')
 
         line = (
             f"'{item_OID}','イオンアイビス（株）','ＤＸシステム開発Ｇ','0543956','高田　優祈音',"
-            f"'商品計画テスト（王）{i}','','','','{item_summry}','{formatted_now}','0543956',"
+            f"'商品計画テスト（王）{i}','','','','{item_summry_str}','{formatted_now}','0543956',"
             f"'{formatted_now}','0','','102','0','@0543956,真洲句 優祈音@','真洲句 優祈音',"
             f"'2023-10-06','ＤＸシステム開発Ｇ','{formatted_now}','0','{formatted_now}','0543956',"
             f"'0543956','1','0','','','','','','','',"
@@ -102,13 +104,12 @@ def create_commodity_csv(total, order_id, pk, work_id):
         new_datetime = current_datetime + timedelta(days=1)
         dd = new_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
-        line = f"{item_OID},0,0220320,102,0,'駄御井 進','上司承認','001','39510',{dd},{dd},1,0,0,0,'0543956,真洲句 優祈音',1,0,'','','',0,'@FK_DeptT=デジタルＳ本部長'"
+        line = f"'{item_OID}','0220320','102','0','駄御井 進','上司承認','001','39510','{dd}','{dd}','{dd}','{dd}','1','0','0','0','0543956,真洲句 優祈音','1','0','','','0','','','@FK_DeptT=デジタルＳ本部長'"
         ts4.writelines(line + "\n")
 
-        line = f"{item_OID},0,0543956,101,0,'真洲句 優祈音','新規申請',001,11637,'無'," \
+        line = f"'{item_OID}','0543956','101','0','真洲句 優祈音','新規申請','001','11637','無'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'," \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',1,0,1,0,1,0," \
-               f"'',1,0,'',1,'','','',0,'','',0,'','',0,'',''"
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},''1','0','1','0','','1','0','','','0','','',''"
         ts4.writelines(line + "\n")
 
         # wf_generworkflow的数据写入
@@ -123,9 +124,9 @@ def create_commodity_csv(total, order_id, pk, work_id):
             f"'{item_OID}','0','102','','001','商品計画申請','{item_01}','0','2','0543956',"
             f"'真洲句 優祈音','0543956','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'{dd}','102','上司承認','11637','ＤＸシステム開発Ｇ','1',"
-            f"'{dd}','','','','0','0','0','','','','','','','',"
-            f"'0220320,駄御井進;','1','0','{item_02}','@0543956,真洲句 優祈音@','','2023-10',"
-            f"'0','0','0','','','',''"
+            f"'{dd}','','','','0','0','0','','','','','',"
+            f"'0220320,駄御井進;',1,'0','{item_02}','@0543956,真洲句 優祈音@','','2023-10',"
+            f"'0','0','0','','',''"
         )
         ts5.writelines(line + '\n')
 
@@ -150,7 +151,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
         item_ordernum2 = f"ALRT2023{int_ordernum2}"
 
         # 1. tt_wf_order_number
-        line = f"'{item_OID}', '005', '{datetime.now().strftime('%Y%m%d')}', '{item_ordernum2}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', '0543956', '', ''"
+        line = f"'{item_OID}','005','{datetime.now().strftime('%Y%m%d')}','{item_ordernum2}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
         writer1.writelines(line + '\n')
 
         # 2. nd5track
@@ -160,10 +161,11 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
                      f'真洲句 優祈音は2023-10-05 17:22で開始.", "OID": {item_OID}, "FK_Dept": "11637", "Emps": "0543956", '
                      f'"FID": "0", "FK_NY": "2023-10", "EndJSON": "0"}}')
 
+        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False)
         line = (
-            f"'{MyPK2}', '1', '発送', '0', '{item_OID}', '501', '新規申請', '502', '上司承認', '0543956', '真洲句 優祈音', "
-            f"'0220320', '駄御井 進', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', '0', '', '', "
-            f"'@SendNode=101', '(0543956,真洲句 優祈音)', {item_frmb}")
+            f"'{MyPK2}','1','発送','0','{item_OID}','501','新規申請','502','上司承認','0543956','真洲句 優祈音',"
+            f"'0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0','','',"
+            f"'@SendNode=101','(0543956,真洲句 優祈音)','{item_frmb}'")
         writer2.writelines(line + '\n')
 
         # 3 tt_wf_arrival_returns
@@ -173,20 +175,20 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
                        f'{{"value": "イオンアイビス（株）", "name": "会社名称"}}, '
                        f'{{"value": "ＤＸシステム開発Ｇ", "name": "所属"}}]}}')
 
-        item_title = f"ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は{datetime.now().strftime('%Y-%m-%d %H:%M')}で開始."
+        item_title = f"'ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は{datetime.now().strftime('%Y-%m-%d %H:%M')}で開始.'"
 
-        line = f"{item_OID}, 'イオンアイビス（株）', 'ＤＸシステム開発Ｇ', '0543956', '高田　優祈音', " \
-               f"'111', 'test', 'A01', 'test', '入荷返品テスト（王）{i}', " \
-               f"'入荷日,仕入伝票No.,返品理由コード,商品名,型番,JANコード,数量,原単価,売単価,総原価,総売価 ?', " \
-               f"'', '', '',{item_summry}, " \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', '0543956', " \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', '0543956', 2, '11637', {item_title}, " \
-               f"'0', '', 502, 0, '', '真洲句 優祈音', " \
-               f"'{datetime.now().strftime('%Y-%m-%d')}', 'ＤＸシステム開発Ｇ', " \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}', 0, " \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}', '0543956', '0543956', 1, 0, '', '', '', '', '', " \
-               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', 502, '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', " \
-               f"'0', '0543956', '0543956', '2023-10'"
+        line = f"'{item_OID}','イオンアイビス（株）','ＤＸシステム開発Ｇ','0543956','高田　優祈音'," \
+               f"'111','test','A01','test','入荷返品テスト（王）{i}'," \
+               f"'入荷日,仕入伝票No.,返品理由コード,商品名,型番,JANコード,数量,原単価,売単価,総原価,総売価 ?'," \
+               f"'','','','{item_summry}'," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956'," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','2','11637',{item_title}," \
+               f"'0','',502,0,'','真洲句 優祈音'," \
+               f"'{datetime.now().strftime('%Y-%m-%d')}','ＤＸシステム開発Ｇ'," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}',0," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}','0543956','0543956','1','0','','','','','','',''," \
+               f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',502,'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'," \
+               f"'0','0543956','0543956','2023-10'"
 
         writer3.writelines(line + '\n')
 
@@ -202,52 +204,47 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
 
         # Modified line
         line = (
-            f"{item_OID},"
-            "0220320,"
-            "502,"
-            "0,"
-            "駄御井 進,"
-            "上司承認,"
-            "005,"
-            "39510,"
-            f"{dd},"
-            f"{dd},"
-            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
-            "1,"
-            "0,"
-            "0,"
-            "0,"
-            "0543956,真洲句 優祈音,"
-            "1,"
-            "0,"
-            "0,"
-            "@FK_DeptT=デジタルＳ本部長"
+            f"'{item_OID}',"
+            "'0220320',"
+            "'502',"
+            "'0',"
+            "'駄御井 進',"
+            "'上司承認',"
+            "'005',"
+            "'39510',"
+            f"'{dd}',"
+            f"'{dd}',"
+            f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
+            "'1',"
+            "'0',"
+            "'0',"
+            "'0',"
+            "'0543956,真洲句 優祈音',"
+            "'1',"
+            "'0',"
+            "'',"
+            "'',"
+            "'0',"
+            "'',"
+            "'',"
+            "'@FK_DeptT=デジタルＳ本部長'"
         )
         writer4.writelines(line + '\n')
 
         line = (
-            f"{item_OID},"
-            "0543956,"
-            "501,"
-            "0,"
-            "真洲句 優祈音,"
-            "新規申請,"
-            "005,"
-            "11637,"
-            "無,"
-            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
-            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
-            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
-            "1,"
-            "0,"
-            "1,"
-            "0,"
-            "0,"
-            "1,"
-            "0,"
-            "0,"
-            "0,"
-            "0,"
+            f"'{item_OID}',"
+            "'0543956',"
+            "'501',"
+            "'0',"
+            "'真洲句 優祈音',"
+            "'新規申請',"
+            "'005',"
+            "'11637',"
+            "'無',"
+            f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','1','0','1','0','','1','0','','','0','','',''"
         )
         writer4.writelines(line + '\n')
 
@@ -260,10 +257,10 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
         item_02 = f"@LastTruckID={item_ordernum2}"
 
         line = (
-            f"{item_OID},0,102,005,入荷返品申請,{item_01},0,2,0543956,真洲句 優祈音,0543956,"
-            f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
-            f"{dd},502,上司承認,11637,ＤＸシステム開発Ｇ,1,"
-            f"{dd},,,,0,0,0,,,,{item_02},@0543956,真洲句 優祈音@,,2023-10,0,0,0,,"
+            f"'{item_OID}','0','102','','005','入荷返品申請','{item_01}','0','2','0543956','真洲句 優祈音','0543956',"
+            f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{dd}','502','上司承認','11637','ＤＸシステム開発Ｇ','1',"
+            f"'{dd}','','','','0','0','0','','','','','','0220320,駄御井進;','1','0','{item_02}','@0543956,真洲句 優祈音@','','2023-10','0','0','0','','',''"
         )
         writer5.writelines(line + '\n')
 
@@ -281,7 +278,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
         item_ordernum3 = f"SKAT2023{int_ordernum3}"
 
         # 1.tt_wf_order_numberのデータを書き込む
-        line = f"{item_OID},007,{datetime.now().strftime('%Y%m%d')},{item_ordernum3},{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},0543956,'',''"
+        line = f"'{item_OID}','007','{datetime.now().strftime('%Y%m%d')}','{item_ordernum3}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
         ts1.writelines(line + '\n')
 
         # 2.nd7trackのデータを書き込む
@@ -303,11 +300,15 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             "FK_NY": "2023-10",
             "EndJSON": "0"
         }
-        import json
-        item_frmb_str = json.dumps(item_frmb)
-        line = (f"{MyPK3},1,発送,0,{item_OID},"
-                f"701,新規申請,702,上司承認,0543956,真洲句 優祈音,0220320,駄御井 進,"
-                f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},0,'','@SendNode=701','(0543956,真洲句 優祈音)',{item_frmb_str}")
+
+        item_frmb_str = json.dumps(item_frmb, ensure_ascii=False)
+        # line = (f"{MyPK3},1,発送,0,{item_OID},"
+        #         f"701,新規申請,702,上司承認,0543956,真洲句 優祈音,0220320,駄御井 進,"
+        #         f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},0,'','@SendNode=701','(0543956,真洲句 優祈音)','{item_frmb_str}'")
+        line = (
+            f"'{MyPK3}','1','発送','0','{item_OID}','701','新規申請','702','上司承認','0543956','真洲句 優祈音',"
+            f"'0220320','駄御井 進','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0','','',"
+            f"'@SendNode=701','(0543956,真洲句 優祈音)','{item_frmb_str}'")
         ts32.writelines(line + '\n')
 
         # 3 tt_wf_stock_adjustmentのデータを書き込む
@@ -333,7 +334,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
                 }
             ]
         }
-        item_frmb_str = json.dumps(item_summary)
+        item_frmb_str = json.dumps(item_summary, ensure_ascii=False)
         item_title = f"ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は{datetime.now().strftime('%Y-%m-%d %H:%M')}で開始."
         line = (
             f"'{item_OID}',"
@@ -342,19 +343,16 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'0543956',"
             f"'高田　優祈音',"
             f"'在庫調整申請テスト（王）{i}',"
-            f"'倉庫コード,倉庫名,部門コード,部門名,商品コード,品種名,メーカー名,型番,入荷日,ロットNo,原単価,売単価,取引先,仕入伝票No,販売期間,入荷数,単品追加数,単品削除数,入庫',"
-            f","
-            f","
-            f"{item_frmb_str},"
+            f"'倉庫コード,倉庫名,部門コード,部門名,商品コード,品種名,メーカー名,型番,入荷日,ロットNo,原単価,売単価,取引先,仕入伝票No,販売期間,入荷数,単品追加数,単品削除数,入庫数計,出荷済数,ロス数,返品数,不良品数,出荷数計,在庫数,展示品数,出荷準備中数,在庫数計 ? ?111,test,11102,部門テスト1,1110201,,,,,,,,,,,,,,,,,,,,,,, ? ','','','',"
+            f"'{item_frmb_str}',"
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'0543956',"
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'0543956',"
             f"'2',"
             f"'11637',"
-            f"'item_title',"
-            f"'0',"
-            f","
+            f"'{item_title}',"
+            f"'0','',"
             f"'702',"
             f"'0',"
             f"'@0543956,真洲句 優祈音@',"
@@ -367,10 +365,8 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'0543956',"
             f"'0543956',"
             f"'1',"
-            f"'0',"
-            f","
-            f","
-            f""
+            f"'0','','','','','','','','2023-10-19 09:31:49','702','2023-10-19 09:31:49','0','0543956','0543956','2023-10'"
+
         )
         ts33.writelines(line + '\n')
         # 4   wf_generworkerlistのデータを書き込む
@@ -404,39 +400,27 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'',"
             f"'0',"
             f"'',"
+            f"'',"
             f"'@FK_DeptT=デジタルＳ本部長'"
         )
         ts4.writelines(line + '\n')
 
         # Calculate the current date and time
         now = datetime.now()
-
-        # Create the line
         line = (
-            f"{item_OID},"
-            f"0543956,"
-            f"701,"
-            f"0,"
-            f"真洲句 優祈音,"
-            f"新規申請,"
-            f"007,"
-            f"11637,"
-            f"無,"
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')},"
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')},"
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')},"
-            f"1,"
-            f"0,"
-            f"1,"
-            f"0,"
-            f"1,"
-            f"0,"
-            f"0,"
-            f"1,"
-            f"0,"
-            f"0,"
-            f"0,"
-            f"0"
+            f"'{item_OID}',"
+            f"'0543956',"
+            f"'701',"
+            f"'0',"
+            f"'真洲句 優祈音',"
+            f"'新規申請',"
+            f"'007',"
+            f"'11637',"
+            f"'無',"
+            f"'{now.strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{now.strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{now.strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'1','0','1','0','','1','0','','','0','','',''"
         )
         ts4.writelines(line + '\n')
 
@@ -457,39 +441,39 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
 
         # Create the line
         line = (
-            f"{item_OID},"
-            f"0,"
-            f"102,"
-            f","
-            f"007,"
-            f"在庫調整申請,"
-            f"{item_01},"
-            f"0,"
-            f"2,"
-            f"0543956,"
-            f"真洲句 優祈音,"
-            f"0543956,"
-            f"{now.strftime('%Y-%m-%d %H:%M:%S')},"
-            f"{dd},"
-            f"702,"
-            f"上司承認,"
-            f"11637,"
-            f"ＤＸシステム開発Ｇ,"
-            f"1,"
-            f"{dd},"
-            f",,,"
-            f"0220320,駄御井進;"
-            f"1,"
-            f"0,"
-            f"{item_02},"
-            f"@0543956,真洲句 優祈音@,,"
-            f"2023-10,"
-            f"0,"
-            f"0,"
-            f"0"
+            f"'{item_OID}',"
+            f"'0',"
+            f"'102',"
+            f"'',"
+            f"'007',"
+            f"'在庫調整申請',"
+            f"'{item_01}',"
+            f"'0',"
+            f"'2',"
+            f"'0543956',"
+            f"'真洲句 優祈音',"
+            f"'0543956',"
+            f"'{now.strftime('%Y-%m-%d %H:%M:%S')}',"
+            f"'{dd}',"
+            f"'702',"
+            f"'上司承認',"
+            f"'11637',"
+            f"'ＤＸシステム開発Ｇ',"
+            f"'1',"
+            f"'{dd}',"
+            f"'','','','0','0','0','','','','','',"
+            f"'0220320,駄御井進;',"
+            f"'1',"
+            f"'0',"
+            f"'{item_02}',"
+            f"'@0543956,真洲句 優祈音@','',"
+            f"'2023-10',"
+            f"'0',"
+            f"'0',"
+            f"'0','','',''"
         )
 
-        ts4.writelines(line + '\n')
+        ts5.writelines(line + '\n')
 
 
 def main():
