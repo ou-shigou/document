@@ -109,6 +109,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
         dd = new_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
         line = f"'{item_OID}','0220320','102','0','駄御井 進','上司承認','001','39510','{dd}','{dd}','{dd}','{dd}','1','0','0','0','0543956,真洲句 優祈音','1','0','','','0','','','@FK_DeptT=デジタルＳ本部長'"
+        line = line.replace("'", '"')
         ts4.writelines(line + "\n")
 
         line = f"'{item_OID}','0543956','101','0','真洲句 優祈音','新規申請','001','11637','無'," \
