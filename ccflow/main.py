@@ -16,15 +16,15 @@ def open_or_create_file(file_path, mode):
 
 out_path1 = os.path.join(os.getcwd(), '/opt/csvdata/test')
 print("当前文件夹路径:", out_path1)
-ts1 = open_or_create_file(os.path.join(out_path1, "tt_wf_order_number01.csv"), "a")
-nd1track01 = open_or_create_file(os.path.join(out_path1, "nd1track01.csv"), "a")
-ts3 = open_or_create_file(os.path.join(out_path1, "tt_wf_merchandise_plan01.csv"), "a")
-ts22 = open_or_create_file(os.path.join(out_path1, "d5track01.csv"), "a")
-ts23 = open_or_create_file(os.path.join(out_path1, "tt_wf_arrival_returns01.csv"), "a")
-ts32 = open_or_create_file(os.path.join(out_path1, "d7track01.csv"), "a")
-ts33 = open_or_create_file(os.path.join(out_path1, "tt_wf_stock_adjustment01.csv"), "a")
-ts4 = open_or_create_file(os.path.join(out_path1, "wf_generworkerlist01.csv"), "a")
-ts5 = open_or_create_file(os.path.join(out_path1, "wf_generworkflow01.csv"), "a")
+ts1 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_order_number.csv"), "a")
+nd1track01 = open_or_create_file(os.path.join(out_path1, "ccflow9.nd1track.csv"), "a")
+ts3 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_merchandise_plan.csv"), "a")
+ts22 = open_or_create_file(os.path.join(out_path1, "ccflow9.nd5track.csv"), "a")
+ts23 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_arrival_returns.csv"), "a")
+ts32 = open_or_create_file(os.path.join(out_path1, "ccflow9.nd7track.csv"), "a")
+ts33 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_stock_adjustment.csv"), "a")
+ts4 = open_or_create_file(os.path.join(out_path1, "ccflow9.wf_generworkerlist.csv"), "a")
+ts5 = open_or_create_file(os.path.join(out_path1, "ccflow9.wf_generworkflow.csv"), "a")
 
 
 # 商品計画申請
