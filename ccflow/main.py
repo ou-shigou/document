@@ -15,7 +15,13 @@ def open_or_create_file(file_path, mode):
         return open(file_path, "w")
 
 
-out_path1 = os.path.join(os.getcwd(), '/opt/csvdata/test')
+def format_number(num, total_length, prefix):
+    num_str = str(num)
+    format_str = prefix + num_str.zfill(total_length)
+    return format_str;
+
+
+out_path1 = os.path.join(os.getcwd(), '/opt/csvdata/tes')
 print("当前文件夹路径:", out_path1)
 ts1 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_order_number.csv"), "a")
 nd1track01 = open_or_create_file(os.path.join(out_path1, "ccflow9.nd1track.csv"), "a")
@@ -40,12 +46,12 @@ def create_commodity_csv(total, order_id, pk, work_id):
     for i in range(1, total + 1):
         item_OID += 1
         int_ordernum1 += 1
-        item_ordernum1 = "MEP2023" + str(int_ordernum1)
+        item_ordernum1 = format_number(int_ordernum1, 7, "MEP20235")
         MyPK1 += 1
 
         # tt_wf_order_number的数据写入
         line = f"'{item_OID}','001','{datetime.now().strftime('%Y%m%d')}','{item_ordernum1}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         ts1.writelines(line + '\n')
 
         # nd1track的数据写入
@@ -87,8 +93,8 @@ def create_commodity_csv(total, order_id, pk, work_id):
                 {"value": "発送", "name": "進行ステータス"},
             ],
         }
-        item_summry_str = json.dumps(item_summry, ensure_ascii=False).replace('"', '\\"')
 
+        item_summry_str = json.dumps(item_summry, ensure_ascii=False).replace('"', '\\"')
         now = datetime.now()
         formatted_now = now.strftime('%Y-%m-%d %H:%M:%S')
         formatted_now_short = now.strftime('%Y-%m-%d %H:%M')
@@ -101,7 +107,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
             f"'0543956','1','0','','','','','','','',"
             f"'{formatted_now_short}','102','{formatted_now_short}','0','0543956','0543956','2023-10'"
         )
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         ts3.writelines(line + "\n")
 
         # wf_generworkerlistのデータを書き込む
@@ -116,7 +122,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
         line = f"'{item_OID}','0543956','101','0','真洲句 優祈音','新規申請','001','11637','無'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')},''1','0','1','0','','1','0','','','0','','',''"
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         ts4.writelines(line + "\n")
 
         # wf_generworkflow的数据写入
@@ -135,7 +141,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
             f"'0220320,駄御井進;','1','0','{item_02}','@0543956,真洲句 優祈音@','','2023-10',"
             f"'0','0','0','','',''"
         )
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         ts5.writelines(line + '\n')
     return item_OID
 
@@ -143,7 +149,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
 # 入荷返品申請
 def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
     # Initialize variables ex: chargeback_order_id ALRT202350000002
-    int_ordernum2 = int(chargeback_order_id[8:-6])
+    int_ordernum2 = int(chargeback_order_id[9:])
     MyPK2 = chargeback_pk
     item_OID = work_id
 
@@ -154,15 +160,15 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
     writer5 = ts5
 
     for i in range(1, total + 1):
-        work_id  +=1
+        work_id += 1
         item_OID += 1
         int_ordernum2 += 1
         MyPK2 += 1
-        item_ordernum2 = f"ALRT2023{int_ordernum2}"
+        item_ordernum2 = format_number(int_ordernum2, 7, 'ALRT20235')
 
         # 1. tt_wf_order_number
         line = f"'{item_OID}','005','{datetime.now().strftime('%Y%m%d')}','{item_ordernum2}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         writer1.writelines(line + '\n')
 
         # 2. nd5track
@@ -264,7 +270,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','1','0','1','0','','1','0','','','0','','',''"
         )
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         writer4.writelines(line + '\n')
 
         # wf_generworkflow
@@ -281,14 +287,14 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
             f"'{dd}','502','上司承認','11637','ＤＸシステム開発Ｇ','1',"
             f"'{dd}','','','','0','0','0','','','','','','0220320,駄御井進;','1','0','{item_02}','@0543956,真洲句 優祈音@','','2023-10','0','0','0','','',''"
         )
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         writer5.writelines(line + '\n')
     return item_OID;
 
 
 # 在庫調整
 def create_store_csv(total, chargeback_order_id, pk, work_id):
-    int_ordernum3 = int(chargeback_order_id[8:-6])
+    int_ordernum3 = int(chargeback_order_id[9:])
     MyPK3 = pk
     item_OID = work_id
 
@@ -296,7 +302,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
         int_ordernum3 += 1
         MyPK3 += 1
         item_OID += 1
-        item_ordernum3 = f"SKAT2023{int_ordernum3}"
+        item_ordernum3 = format_number(int_ordernum3, 7, 'SKAT20235')
 
         # 1.tt_wf_order_numberのデータを書き込む
         line = f"'{item_OID}','007','{datetime.now().strftime('%Y%m%d')}','{item_ordernum3}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
@@ -493,7 +499,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'0',"
             f"'0','','',''"
         )
-        line = line.replace("'",'"')
+        line = line.replace("'", '"')
         ts5.writelines(line + '\n')
 
 
