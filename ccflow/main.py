@@ -201,12 +201,12 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
         item_title = f"'ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は{datetime.now().strftime('%Y-%m-%d %H:%M')}で開始.'"
 
         line = f"'{item_OID}','イオンアイビス（株）','ＤＸシステム開発Ｇ','0543956','高田　優祈音'," \
-               f"'111','test','A01','test','入荷返品テスト（王）{i}'," \
+               f"'111','test','A01','test','11101','test','入荷返品テスト（王）{i}'," \
                f"'入荷日,仕入伝票No.,返品理由コード,商品名,型番,JANコード,数量,原単価,売単価,総原価,総売価 ?'," \
                f"'','','','{item_summry_str}'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','2','11637',{item_title}," \
-               f"'0','','502','0','','真洲句 優祈音'," \
+               f"'0','','502','0','@0543956,真洲句 優祈音@','真洲句 優祈音'," \
                f"'{datetime.now().strftime('%Y-%m-%d')}','ＤＸシステム開発Ｇ'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}','0'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M')}','0543956','0543956','1','0','','','','','','',''," \
