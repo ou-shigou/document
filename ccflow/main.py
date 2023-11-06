@@ -21,7 +21,7 @@ def format_number(num, total_length, prefix):
     return format_str;
 
 
-out_path1 = os.path.join(os.getcwd(), '/opt/csvdata/tes')
+out_path1 = os.path.join(os.getcwd(), 'csv')
 print("当前文件夹路径:", out_path1)
 ts1 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_order_number.csv"), "a")
 nd1track01 = open_or_create_file(os.path.join(out_path1, "ccflow9.nd1track.csv"), "a")
@@ -99,7 +99,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
 
         line = (
             f"'{item_OID}','イオンアイビス（株）','ＤＸシステム開発Ｇ','0543956','高田　優祈音',"
-            f"'商品計画テスト（王）{i}',,,'WFComment','{item_summry_str}','{formatted_now}','0543956',"
+            f"'商品計画テスト（王）{i}',,'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','WFComment','{item_summry_str}','{formatted_now}','0543956',"
             f"'{formatted_now}','0543956','2','11637','ＤＸシステム開発Ｇ-0543956,真洲句 優祈音は2023-11-06 15:22で開始.','0','','102','0','@0543956,真洲句 優祈音@','真洲句 優祈音',"
             f"'2023-10-06','ＤＸシステム開発Ｇ','{formatted_now_short}','0','{formatted_now}','0543956',"
             f"'0543956','1','0','','','','','','','',"
@@ -201,7 +201,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
         line = f"'{item_OID}','イオンアイビス（株）','ＤＸシステム開発Ｇ','0543956','高田　優祈音'," \
                f"'111','test','A01','test','11101','test','入荷返品テスト（王）{i}'," \
                f"'入荷日,仕入伝票No.,返品理由コード,商品名,型番,JANコード,数量,原単価,売単価,総原価,総売価 ?'," \
-               f"'',,'','{item_summry_str}'," \
+               f"'','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','','{item_summry_str}'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956'," \
                f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','2','11637',{item_title}," \
                f"'0','','502','0','@0543956,真洲句 優祈音@','真洲句 優祈音'," \
@@ -366,7 +366,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
             f"'0543956',"
             f"'高田　優祈音',"
             f"'在庫調整申請テスト（王）{i}',"
-            f"'倉庫コード,倉庫名,部門コード,部門名,商品コード,品種名,メーカー名,型番,入荷日,ロットNo,原単価,売単価,取引先,仕入伝票No,販売期間,入荷数,単品追加数,単品削除数,入庫数計,出荷済数,ロス数,返品数,不良品数,出荷数計,在庫数,展示品数,出荷準備中数,在庫数計 ? ?111,test,11102,部門テスト1,1110201,,,,,,,,,,,,,,,,,,,,,,, ? ','',,'',"
+            f"'倉庫コード,倉庫名,部門コード,部門名,商品コード,品種名,メーカー名,型番,入荷日,ロットNo,原単価,売単価,取引先,仕入伝票No,販売期間,入荷数,単品追加数,単品削除数,入庫数計,出荷済数,ロス数,返品数,不良品数,出荷数計,在庫数,展示品数,出荷準備中数,在庫数計 ? ?111,test,11102,部門テスト1,1110201,,,,,,,,,,,,,,,,,,,,,,, ? ','','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','',"
             f"'{item_frmb_str}',"
             f"'{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',"
             f"'0543956',"
