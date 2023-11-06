@@ -21,7 +21,7 @@ def format_number(num, total_length, prefix):
     return format_str;
 
 
-out_path1 = os.path.join(os.getcwd(), 'csv')
+out_path1 = os.path.join(os.getcwd(), '/opt/csvdata/tes')
 print("当前文件夹路径:", out_path1)
 ts1 = open_or_create_file(os.path.join(out_path1, "ccflow9.tt_wf_order_number.csv"), "a")
 nd1track01 = open_or_create_file(os.path.join(out_path1, "ccflow9.nd1track.csv"), "a")
@@ -50,7 +50,7 @@ def create_commodity_csv(total, order_id, pk, work_id):
         MyPK1 += 1
 
         # tt_wf_order_number的数据写入
-        line = f"'{item_OID}','001','{datetime.now().strftime('%Y%m%d')}','{item_ordernum1}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
+        line = f"'{item_OID}','001','{datetime.now().strftime('%Y%m%d')}','{item_ordernum1}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',''"
         line = line.replace("'", '"')
         ts1.writelines(line + '\n')
 
@@ -165,7 +165,7 @@ def create_chargeback_csv(total, chargeback_order_id, chargeback_pk, work_id):
         item_ordernum2 = format_number(int_ordernum2, 7, 'ALRT20235')
 
         # 1. tt_wf_order_number
-        line = f"'{item_OID}','005','{datetime.now().strftime('%Y%m%d')}','{item_ordernum2}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
+        line = f"'{item_OID}','005','{datetime.now().strftime('%Y%m%d')}','{item_ordernum2}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',''"
         line = line.replace("'", '"')
         writer1.writelines(line + '\n')
 
@@ -303,7 +303,7 @@ def create_store_csv(total, chargeback_order_id, pk, work_id):
         item_ordernum3 = format_number(int_ordernum3, 7, 'SKAT20235')
 
         # 1.tt_wf_order_numberのデータを書き込む
-        line = f"'{item_OID}','007','{datetime.now().strftime('%Y%m%d')}','{item_ordernum3}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','',''"
+        line = f"'{item_OID}','007','{datetime.now().strftime('%Y%m%d')}','{item_ordernum3}','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}','0543956','{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}',''"
         line = line.replace("'", '"')
         ts1.writelines(line + '\n')
 
