@@ -40,12 +40,12 @@ az aks update -g saas-core -n saas-cluster --enable-pod-identity --enable-pod-id
 ```
 #### ⑧PodIdentityの作成
 参照ページ：https://learn.microsoft.com/ja-jp/azure/aks/use-azure-ad-pod-identity
+※ ポッドに AzureIdentityBinding のセレクターと一致する値が指定された aadpodidbinding ラベルが必要です。
+　 既定では、セレクターはポッドマネージド ID の名前（<span style="color:red;">saas-pod-identity</span>）と一致しますが、
+　 --binding-selector オプションを使用して設定することもできます。
 ```
 az identity show -g saas-core -n saas-cluster-mnid --query id -otsv　⇒　出力内容を下記のidentity-resource-idに置き換える
-az aks pod-identity add --resource-group saas-core --cluster-name saas-cluster --namespace saas-core  --name **<span style="color:red;">saas-pod-identity</span>** --identity-resource-id /subscriptions/a849fbfa-c9d9-4fe3-b47f-60a4fa01253a/resourcegroups/MC_saas-core_saas-cluster_japaneast/providers/Microsoft.ManagedIdentity/userAssignedIdentities/saas-cluster-agentpool
-※ ポッドに AzureIdentityBinding のセレクターと一致する値が指定された aadpodidbinding ラベルが必要です。
-　 既定では、セレクターはポッドマネージド ID の名前（**<span style="color:red;">saas-pod-identity</span>**）と一致しますが、
-　 --binding-selector オプションを使用して設定することもできます。
+az aks pod-identity add --resource-group saas-core --cluster-name saas-cluster --namespace saas-core  --name saas-pod-identity --identity-resource-id /subscriptions/a849fbfa-c9d9-4fe3-b47f-60a4fa01253a/resourcegroups/MC_saas-core_saas-cluster_japaneast/providers/Microsoft.ManagedIdentity/userAssignedIdentities/saas-cluster-agentpool
 ```
 #### ⑨ACRの作成
 作成した後、ACRにイメージの格納も必要
