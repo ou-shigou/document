@@ -38,10 +38,10 @@ az provider register --namespace Microsoft.ContainerService
 ```
 az aks update -g saas-core -n saas-cluster --enable-pod-identity --enable-pod-identity-with-kubenet
 ```
-#### ⑧PodIdentityの作成
-参照ページ：https://learn.microsoft.com/ja-jp/azure/aks/use-azure-ad-pod-identity
-※ ポッドに AzureIdentityBinding のセレクターと一致する値が指定された aadpodidbinding ラベルが必要です。
-　 既定では、セレクターはポッドマネージド ID の名前（<span style="color:red;">saas-pod-identity</span>）と一致しますが、
+#### ⑧PodIdentityの作成<br/>
+参照ページ：https://learn.microsoft.com/ja-jp/azure/aks/use-azure-ad-pod-identity<br/>
+※ ポッドに AzureIdentityBinding のセレクターと一致する値が指定された aadpodidbinding ラベルが必要です。<br/>
+　 既定では、セレクターはポッドマネージド ID の名前（<font color="red">saas-pod-identity</font>）と一致しますが、<br/>
 　 --binding-selector オプションを使用して設定することもできます。
 ```
 az identity show -g saas-core -n saas-cluster-mnid --query id -otsv　⇒　出力内容を下記のidentity-resource-idに置き換える
