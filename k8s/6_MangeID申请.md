@@ -1,4 +1,5 @@
 在Azure中，创建一个Managed Identity（管理身份）可以通过Azure门户、Azure CLI（命令行界面）或Azure PowerShell完成。以下是使用Azure CLI创建Managed Identity的步骤：
+<span style="color: red;">您的文本</span>
 
 ### 使用Azure CLI创建Managed Identity
 
