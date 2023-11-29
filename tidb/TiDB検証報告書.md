@@ -82,7 +82,7 @@ az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query 
 ![k8sver5.png](img/k8sver5.png)  
 
 * control planeのK8Sバージョンアップを行います。
-※バージョン1.25.11は1.26.10など限定バージョンにバージョンアップできるようになっていて、ほかのバージョン番号を指定されたら、エラーが発生します。
+※バージョン1.25.11は1.26.10など限定バージョンにしかバージョンアップできないようになっていて、ほかのバージョン番号を指定されたら、エラーが発生します。
 ```
 az aks upgrade --resource-group saas-core --name aeontidb --control-plane-only --no-wait --kubernetes-version 1.26.10
 ```
