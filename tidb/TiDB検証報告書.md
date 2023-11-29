@@ -81,14 +81,79 @@ az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query 
 ```
 ![k8sver5.png](img/k8sver5.png)  
 
-* control planeのK8Sバージョンアップを行う。
+* control planeのK8Sバージョンアップを行います。
+※バージョン1.25.11は1.26.10など限定バージョンにバージョンアップできるようになっていて、ほかのバージョン番号を指定されたら、エラーが発生します。
 ```
-az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query "[].{Name:name,k8version:orchestratorVersion}" --output table
-```
-![k8sver5.png](img/k8sver5.png)  
-
-```
-az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query "[].{Name:name,k8version:orchestratorVersion}" --output table
+az aks upgrade --resource-group saas-core --name aeontidb --control-plane-only --no-wait --kubernetes-version 1.26.10
 ```
 ![k8sver6.png](img/k8sver6.png)  
+
+```
+az aks show --resource-group saas-core --name aeontidb --output table
+```
+![k8sver7.png](img/k8sver7.png)  
+
+* 新しいtidb Poolを新規作成します。
+```
+az aks nodepool add --name newtidb --cluster-name aeontidb --resource-group saas-core --node-vm-size Standard_E8s_v4 --zones 1 2 3 --node-count 2 --labels dedicated=tidb --node-taints dedicated=tidb:NoSchedule
+```
+![k8sver9.png](img/k8sver9.png)  
+![k8sver10.png](img/k8sver10.png)  
+* PODを確認します。
+```
+kubectl get pod -n tidb-cluster -o wide
+```
+![k8sver11.png](img/k8sver11.png) 
+
+* 古いtidb Poolの紐づけを外します。
+```
+az aks nodepool update --resource-group saas-core --cluster-name aeontidb --name "tidb" --labels="" --node-taints=""
+```
+![k8sver12.png](img/k8sver12.png) 
+
+* tidbのPodを削除します（新Tidb Poolに紐づける新しいPODを自動起動する）。
+```
+kubectl delete pod basic-tidb-0 -n tidb-cluster
+kubectl delete pod basic-tidb-1 -n tidb-cluster
+```
+![k8sver13.png](img/k8sver13.png) 
+![k8sver14.png](img/k8sver14.png)
+* 古いtidb Poolを削除します。
+```
+az aks nodepool delete --name tidb --cluster-name aeontidb --resource-group saas-core
+```
+![k8sver15.png](img/k8sver15.png) 
+![k8sver16.png](img/k8sver16.png)
+
+* Pd,tikvも同じように新規Pool,旧pool関連外し、POD削除などを行います、コマンドは以下になります。
+```
+az aks nodepool add --name newpd --cluster-name aeontidb --resource-group saas-core --node-vm-size Standard_F4s_v2 --zones 1 2 3 --node-count 3 --labels dedicated=pd --node-taints dedicated=pd:NoSchedule
+
+az aks nodepool add --name newtikv --cluster-name aeontidb --resource-group saas-core --node-vm-size Standard_E8s_v4 --zones 1 2 3 --node-count 3 --labels dedicated=tikv --node-taints dedicated=tikv:NoSchedule
+
+ az aks nodepool update --resource-group saas-core --cluster-name aeontidb --name "pd" --labels="" --node-taints=""
+ az aks nodepool update --resource-group saas-core --cluster-name aeontidb --name "tikv" --labels="" --node-taints="“
+kubectl delete pod basic-pd-0 -n tidb-clusterkubectl delete pod basic-pd-1 -n tidb-cluster
+kubectl delete pod basic-pd-2 -n tidb-clusterkubectl delete pod basic-tikv-0 -n tidb-cluster
+kubectl delete pod basic-tikv-1 -n tidb-clusterkubectl delete pod basic-tikv-2 -n tidb-cluster
+az aks nodepool delete --name pd --cluster-name aeontidb --resource-group saas-core
+az aks nodepool delete --name tikv --cluster-name aeontidb --resource-group saas-core
+```
+* 新ticdc Poolを作成し、旧ticdc Poolを削除します。
+```
+az aks nodepool add --name newticdc --cluster-name aeontidb --resource-group saas-core --node-vm-size Standard_E16s_v4 --zones 1 2 3  --node-count 3 --labels dedicated=ticdc --node-taints dedicated=ticdc:NoSchedule
+az aks nodepool delete --name ticdc --cluster-name aeontidb --resource-group saas-core
+az aks nodepool list --cluster-name aeontidb --resource-group saas-core --output table
+```
+![k8sver17.png](img/k8sver17.png) 
+
+* Master PoolのKubenetesバージョンアップを行います。
+```
+az aks nodepool upgrade --resource-group saas-core --cluster-name aeontidb --name admin --no-wait --kubernetes-version 1.26.10
+```
+![k8sver17.png](img/k8sver17.png) 
+
+* テストアプリ画面でフローの承認などの作業をし、正常に動作できることが確認できました！
+![k8sver18.png](img/k8sver18.png) 
+
 
