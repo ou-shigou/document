@@ -113,7 +113,7 @@ az aks nodepool update --resource-group saas-core --cluster-name aeontidb --name
 
 * tidbのPodを削除します（新Tidb Poolに紐づける新しいPODを自動起動する）。
 ```
-kubectl delete pod basic-tidb-0 -n tidb-cluster
+kubectl delete pod basic-tidb-0 -n tidb-cluster
 kubectl delete pod basic-tidb-1 -n tidb-cluster
 ```
 ![k8sver13.png](img/k8sver13.png) 
@@ -133,9 +133,12 @@ az aks nodepool add --name newtikv --cluster-name aeontidb --resource-group saas
 
  az aks nodepool update --resource-group saas-core --cluster-name aeontidb --name "pd" --labels="" --node-taints=""
  az aks nodepool update --resource-group saas-core --cluster-name aeontidb --name "tikv" --labels="" --node-taints="“
-kubectl delete pod basic-pd-0 -n tidb-clusterkubectl delete pod basic-pd-1 -n tidb-cluster
-kubectl delete pod basic-pd-2 -n tidb-clusterkubectl delete pod basic-tikv-0 -n tidb-cluster
-kubectl delete pod basic-tikv-1 -n tidb-clusterkubectl delete pod basic-tikv-2 -n tidb-cluster
+kubectl delete pod basic-pd-0 -n tidb-cluster
+kubectl delete pod basic-pd-1 -n tidb-cluster
+kubectl delete pod basic-pd-2 -n tidb-cluster
+kubectl delete pod basic-tikv-0 -n tidb-cluster
+kubectl delete pod basic-tikv-1 -n tidb-cluster
+kubectl delete pod basic-tikv-2 -n tidb-cluster
 az aks nodepool delete --name pd --cluster-name aeontidb --resource-group saas-core
 az aks nodepool delete --name tikv --cluster-name aeontidb --resource-group saas-core
 ```
