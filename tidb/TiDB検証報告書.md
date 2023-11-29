@@ -151,7 +151,7 @@ az aks nodepool list --cluster-name aeontidb --resource-group saas-core --output
 ```
 az aks nodepool upgrade --resource-group saas-core --cluster-name aeontidb --name admin --no-wait --kubernetes-version 1.26.10
 ```
-![k8sver17.png](img/k8sver17.png) 
+![k8sver19.png](img/k8sver19.png) 
 
 * テストアプリ画面でフローの承認などの作業をし、正常に動作できることが確認できました！
 ![k8sver18.png](img/k8sver18.png) 
