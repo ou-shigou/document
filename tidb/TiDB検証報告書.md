@@ -59,16 +59,36 @@ KubunetesバージョンアップはよくBlue/Green運用の形で対応して�
 
 ```
 kubectl get nodes
-
 ```
 ![k8sver1.png](img/k8sver1.png)  
 ```
 kubectl get tc -n tidb-cluster
-
 ```
 ![k8sver2.png](img/k8sver2.png)  
 ```
 kubectl get pod -n tidb-cluster -o wide
-
 ```
 ![k8sver3.png](img/k8sver3.png)  
+
+* control plane、PoolのK8Sバージョンを確認します。
+
+```
+az aks show --resource-group saas-core --name aeontidb --output table
+```
+![k8sver4.png](img/k8sver4.png)  
+```
+az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query "[].{Name:name,k8version:orchestratorVersion}" --output table
+```
+![k8sver5.png](img/k8sver5.png)  
+
+* control planeのK8Sバージョンアップを行う。
+```
+az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query "[].{Name:name,k8version:orchestratorVersion}" --output table
+```
+![k8sver5.png](img/k8sver5.png)  
+
+```
+az aks nodepool list --resource-group saas-core --cluster-name aeontidb --query "[].{Name:name,k8version:orchestratorVersion}" --output table
+```
+![k8sver6.png](img/k8sver6.png)  
+
