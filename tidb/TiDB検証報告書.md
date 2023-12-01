@@ -1,14 +1,18 @@
 TiDB検証検証報告書
 ===========================
 # 目次
+- [TiDB検証目的](#TiDB検証目的)
 - [TiDB検証概要](#TiDB検証概要)
 - [TiDB検証環境準備](#TiDB検証環境準備)
 - [TiDB検証テストデータ準備](#TiDB検証テストデータ準備)
-- [TiDBセッキュリティ検証](#TiDBセッキュリティ検証)
+- [TiDB運用とセッキュリティ検証](#TiDB運用とセッキュリティ検証)
 - [TiDB性能検証](#TiDB性能検証)
 - [DX環境でのTiDBインストール](#DX環境でのTiDBインストール)
+## TiDB検証目的
+Azureクラウドでのインストール、大量データ状態での運用手法、セッキュリテイ性、又利用性能などの観点からTiDBという製品がイオンのプロジェクトに適用かどうかを検証するのは今回の目的である。
 ## TiDB検証概要 
-TiDB検証の詳細は下表のように纏めました。結論としては、TiDBはAzureクラウドで運用しやく、大量データを扱う場合でも性能に満足できる製品になります。
+TiDB検証の詳細は下表のように纏めました。 
+**結論としては、TiDBはAzureクラウドで運用しやすく、大量データを扱う場合でも性能に満足できる製品になります。**
 | NO | 検証内容 | 評価結果 | 備考 |
 | ---------- | -----------|-----------|-----------|
 | 1| TiDBのAzureクラウドインストール検証 | ◎ | Azureクラウドにインストールしたが、DX環境のインストールはまだ検証していない |
@@ -18,8 +22,12 @@ TiDB検証の詳細は下表のように纏めました。結論としては、T
 | 2.3| TiDBバージョンアップ | ◎ |  |
 | 2.4| データ保存テスク拡張検証 | ◎ |  |
 | 2.5| 安全なDBアクセス方式の確立 | 〇 | サービスプリンシパル方式なし |
+| 2.5.1| TiDB 安全な接続| ◎ | TiDB クライアント側の暗号化 |
+| 2.5.2| Azure AD authentication | △ | Azure AD authentication サポート対象外 |
 | 2.6| 多DBインスタンスの検証 | ◎ | インスタンス毎に細かくリリース振り分けできることを検証する |
-| 3| TiDB性能検証 | 〇 | OrderBy対応に懸念が残ったため、一重まるを付けることに |
+| 3| TiDB性能検証 | 〇 | |
+| 3.1| 大量データ参照 | ◎ | 三億行ほどのテーブルの参照 |
+| 3.2| OrderBy | 〇 | OrderBy対応に懸念が残ったため、一重まるを付けることに(上順と下順の組合せ) |
 
 ## TiDB検証環境準備
 
@@ -46,7 +54,7 @@ CCFlowエンジンなどを解析し、データベーステーブルにワー�
 大容量テストデータ作成用のPythonプログラムを開発し、TiDBのAKS内テストデータ作成用POD（8Core,メモリ16Gi）、PODにテストデータ保存用ディスク１Tを付けることに、TiDB Lightningツールを使って1.5億件フロー（3業務フローにそれぞれ5000万件）データを導入した。
 以上の1.5億件フローデータの容量は500Gi超になり、TiDBのセッキュリテイ性能を検証するためTiDB全体のボリュームが１Tiの状態でテストしたいと考えて、TiDBに新しいインスタンスを追加し、上記同じ500Giテストデータが新インスタンスにも導入した。
 
-## TiDBセッキュリティ検証
+## TiDB運用とセッキュリティ検証
 以下の順でKubunetesバージョンアップ、データベースバックアップ、 TiDBバージョンアップ、データ保存テスク拡張、安全なDBアクセス方式の確立、多DBインスタンスの検証を行いました。
 
 ### Kubunetesバージョンアップ
@@ -188,20 +196,94 @@ select count(oid) from tt_wf_merchandise_plan;
 ```
 ![test4.png](img/test4.png) 
 ### 複数テーブルCount性能検証
-
+テーブルwf_generworkflowとwf_generworkerlist以下のように結合後のCount検証
+```
+SELECT count(*) FROM `wf_generworkflow` AS `a` JOIN (select * from `wf_generworkerlist` where FK_Emp='0220320' ) AS `b` ON (`b`.`IsEnable`=1) AND (`b`.`IsPass`=0) AND (`a`.`WorkID`=`b`.`WorkID`) AND (`a`.`FK_Node`=`b`.`FK_Node`) AND (`a`.`WFState`!=0) AND (`b`.`WhoExeIt`!=1)  AND a.TaskSta=0 AND  a.WFState!=10;
+```
+```
+SELECT count(*) FROM `wf_generworkflow` AS `a` JOIN (select * from `wf_generworkerlist` where FK_Emp='0210069' )
+AS `b` ON (`b`.`IsEnable`=1) AND (`b`.`IsPass`=0) AND (`a`.`WorkID`=`b`.`WorkID`) AND (`a`.`FK_Node`=`b`.`FK_Node`) AND
+(`a`.`WFState`!=0) AND (`b`.`WhoExeIt`!=1)  AND a.TaskSta=0 AND  a.WFState!=10;
+```
+![test5.png](img/test5.png) 
 
 ### 多テーブル一覧検索性能検証
+* 上記複数テーブルCount性能検証と同じ結合条件で10000目レコードから5件レコードを抽出した場合の性能検証(Order by にWordIDだけにする)
+```
+SELECT `b`.`FK_Emp` AS `FK_Emp`,`a`.`PRI` AS `PRI`,`a`.`WorkID` AS `WorkID`,`b`.`IsRead` AS `IsRead`,`a`.`Starter` AS `Starter`,`a`.`StarterName` AS `StarterName`,`a`.`WFState` AS `WFState`,`a`.`FK_Dept` AS `FK_Dept`,`a`.`DeptName` AS `DeptName`,`a`.`FK_Flow` AS `FK_Flow`,`a`.`FlowName` AS `FlowName`,`a`.`PWorkID` AS `PWorkID`,`a`.`PFlowNo` AS `PFlowNo`,`b`.`FK_Node` AS `FK_Node`,`b`.`FK_NodeText` AS `NodeName`,`b`.`FK_Dept` AS `WorkerDept`,`a`.`Title` AS `Title`,`a`.`RDT` AS `RDT`,`b`.`RDT` AS `ADT`,`b`.`SDT` AS `SDT`,`b`.`FID` AS `FID`,`a`.`FK_FlowSort` AS `FK_FlowSort`,`a`.`SysType` AS `SysType`,`a`.`SDTOfNode` AS `SDTOfNode`,`b`.`PressTimes` AS `PressTimes`,`a`.`GuestNo` AS `GuestNo`,`a`.`GuestName` AS `GuestName`,`a`.`BillNo` AS `BillNo`,`a`.`FlowNote` AS `FlowNote`,`a`.`TodoEmps` AS `TodoEmps`,`a`.`TodoEmpsNum` AS `TodoEmpsNum`,`a`.`TodoSta` AS `TodoSta`,`a`.`TaskSta` AS `TaskSta`,0 AS `ListType`,`a`.`Sender` AS `Sender`,`a`.`AtPara` AS `AtPara`,1 AS `MyNum` FROM `wf_generworkflow` AS `a` JOIN wf_generworkerlist AS `b` ON (`b`.`IsEnable`=1) AND (`b`.`IsPass`=0) AND (`a`.`WorkID`=`b`.`WorkID`) AND (`a`.`FK_Node`=`b`.`FK_Node`) AND (`a`.`WFState`!=0) AND (`b`.`WhoExeIt`!=1)  AND a.TaskSta=0 AND  a.WFState!=10 Order by WorkID desc LIMIT 5 OFFSET 10000
+```
+![test6.png](img/test6.png) 
 
-以下のテストアプリ側に最もアクセスする画面ーー承認待ち/未完了/完了一覧画面<br/>
+* Order by にa.WordID desc ,b.FK_Emp ascにする場合
+```
+SELECT `b`.`FK_Emp` AS `FK_Emp`,`a`.`PRI` AS `PRI`,`a`.`WorkID` AS `WorkID`,`b`.`IsRead` AS `IsRead`,`a`.`Starter` AS `Starter`,`a`.`StarterName` AS `StarterName`,`a`.`WFState` AS `WFState`,`a`.`FK_Dept` AS `FK_Dept`,`a`.`DeptName` AS `DeptName`,`a`.`FK_Flow` AS `FK_Flow`,`a`.`FlowName` AS `FlowName`,`a`.`PWorkID` AS `PWorkID`,`a`.`PFlowNo` AS `PFlowNo`,`b`.`FK_Node` AS `FK_Node`,`b`.`FK_NodeText` AS `NodeName`,`b`.`FK_Dept` AS `WorkerDept`,`a`.`Title` AS `Title`,`a`.`RDT` AS `RDT`,`b`.`RDT` AS `ADT`,`b`.`SDT` AS `SDT`,`b`.`FID` AS `FID`,`a`.`FK_FlowSort` AS `FK_FlowSort`,`a`.`SysType` AS `SysType`,`a`.`SDTOfNode` AS `SDTOfNode`,`b`.`PressTimes` AS `PressTimes`,`a`.`GuestNo` AS `GuestNo`,`a`.`GuestName` AS `GuestName`,`a`.`BillNo` AS `BillNo`,`a`.`FlowNote` AS `FlowNote`,`a`.`TodoEmps` AS `TodoEmps`,`a`.`TodoEmpsNum` AS `TodoEmpsNum`,`a`.`TodoSta` AS `TodoSta`,`a`.`TaskSta` AS `TaskSta`,0 AS `ListType`,`a`.`Sender` AS `Sender`,`a`.`AtPara` AS `AtPara`,1 AS `MyNum` FROM `wf_generworkflow` AS `a` JOIN wf_generworkerlist AS `b` ON (`b`.`IsEnable`=1) AND (`b`.`IsPass`=0) AND (`a`.`WorkID`=`b`.`WorkID`) AND (`a`.`FK_Node`=`b`.`FK_Node`) AND (`a`.`WFState`!=0) AND (`b`.`WhoExeIt`!=1)  AND a.TaskSta=0 AND  a.WFState!=10 Order by WorkID desc,FK_Emp asc LIMIT 5 OFFSET 10000;
+```
+下図のように「Out Of Memory」エラーが発生しました。
+![test7.png](img/test7.png) 
+* 降順(desc)、昇順(asc)を外しても、同じく「Out Of Memory」エラーが発生しました。
+![test8.png](img/test8.png) 
+懸念：結合後違うテーブル、違うカラムでOrder Byできないのです。
+
+* 同じテーブルでもOrder byに複数カラム、かつ降順(desc)、昇順(asc)を自由に組合せで検索する
+wf_generworkerlistテーブルに以下のインデックス追加済みです。
+** workid
+** fk_emp
+** workid,fk_emp
+** fk_emp,workid
+
+```
+select * from wf_generworkerlist order by workid desc,fk_emp asc limit 5 offset 10000;
+```
+![test9.png](img/test9.png) 
+```
+select * from wf_generworkerlist order by fk_emp asc,workid desc limit 5 offset 0;
+```
+![test10.png](img/test10.png) 
+上記いずれも１分以上がかかりました。
+
+
+懸念：TiDBでは同じテーブルでもOrder byにカラム（カラム組合せインデックス追加済みであることを前提）の降順(desc)、昇順(asc)を自由に組合せすることができないのです。
+以下のようにdescやascを外したら、エラーなく検索できる
+* 降順(desc)、昇順(asc)を外して、又は全部昇順(asc)で検索を行う（インデックスには昇順(asc)がデフォルトである）
+```
+select * from wf_generworkerlist order by workid ,fk_emp  limit 5 offset 0;
+```
+![test11.png](img/test11.png) 
+```
+select * from wf_generworkerlist order by fk_emp asc,workid asc limit 5 offset 0;
+```
+![test12.png](img/test12.png) 
+上記いずれも0.02秒以内が完了しました。
+
+以下のテストアプリ側に最もアクセスする画面ーー承認待ち/未完了/完了一覧画面である<br/>
 ※以下はテストデータを表示されている画面イメージです。三画面データが同じタイミングでデータ抽出を行う
 * 承認待ち一覧
 ![test1.png](img/test1.png) 
 * 完了一覧
 ![test2.png](img/test2.png) 
 
+上記の一覧に使う検索文は以下のようものです。
+```
+SELECT A.* ,F.*,OU.ORDER_NUMBER FROM (SELECT `b`.`FK_Emp` AS `FK_Emp`,`a`.`PRI` AS `PRI`,`a`.`WorkID` AS `WorkID`,`b`.`IsRead` AS `IsRead`,`a`.`Starter` AS `Starter`,`a`.`StarterName` AS `StarterName`,`a`.`WFState` AS `WFState`,`a`.`FK_Dept` AS `FK_Dept`,`a`.`DeptName` AS `DeptName`,`a`.`FK_Flow` AS `FK_Flow`,`a`.`FlowName` AS `FlowName`,`a`.`PWorkID` AS `PWorkID`,`a`.`PFlowNo` AS `PFlowNo`,`b`.`FK_Node` AS `FK_Node`,`b`.`FK_NodeText` AS `NodeName`,`b`.`FK_Dept` AS `WorkerDept`,`a`.`Title` AS `Title`,`a`.`RDT` AS `RDT`,`b`.`RDT` AS `ADT`,`b`.`SDT` AS `SDT`,`b`.`FID` AS `FID`,`a`.`FK_FlowSort` AS `FK_FlowSort`,`a`.`SysType` AS `SysType`,`a`.`SDTOfNode` AS `SDTOfNode`,`b`.`PressTimes` AS `PressTimes`,`a`.`GuestNo` AS `GuestNo`,`a`.`GuestName` AS `GuestName`,`a`.`BillNo` AS `BillNo`,`a`.`FlowNote` AS `FlowNote`,`a`.`TodoEmps` AS `TodoEmps`,`a`.`TodoEmpsNum` AS `TodoEmpsNum`,`a`.`TodoSta` AS `TodoSta`,`a`.`TaskSta` AS `TaskSta`,0 AS `ListType`,`a`.`Sender` AS `Sender`,`a`.`AtPara` AS `AtPara`,1 AS `MyNum` FROM `wf_generworkflow` AS `a` JOIN (select * from `wf_generworkerlist` where FK_Emp='0220320' ) AS `b` ON (`b`.`IsEnable`=1) AND (`b`.`IsPass`=0) AND (`a`.`WorkID`=`b`.`WorkID`) AND (`a`.`FK_Node`=`b`.`FK_Node`) AND (`a`.`WFState`!=0) AND (`b`.`WhoExeIt`!=1)  AND a.TaskSta=0 AND  a.WFState!=10) A left join WF_Flow AS F on A.FK_Flow =F.No LEFT JOIN TT_WF_ORDER_NUMBER AS OU ON A.WorkID = OU.OID WHERE  A.WFState!=10 ORDER BY  A.WorkID DESC LIMIT 12 OFFSET 0;
+```
+![test13.png](img/test13.png) 
+テストアプリのデータベース検索SQL文に色々チューニングした結果、検索（承認待ち、未完了、完了三つの検索を行う）に必要な時間が１秒以内で完成でき、ウェブ画面の描画時間を含めて20秒前後三つのリストを表示できました<br>
+<B>億単位のデータを扱うシステムに対して、MySQL、SQL Serverなどのデータベースで対応できない場面に対して、SQL文チューニングに少し工夫が必要であるものの、TiDBは対応できるようであることを検証できました。</B>
+
 ### フロー新規（Insert）性能検証
-
+下記の「商品計画申請」リンクを押下されたら、tt_wf_merchandise_plan、nd1track、wf_generworkflow、wf_generworkerlist、tt_wf_order_numberにそれぞれ一レコードを追加し、リンク押下から画面表示するまで10秒以内で完成でき、申請データなしの場合の反応時間との差がなしである。
+![test14.png](img/test14.png) 
+![test15.png](img/test15.png) 
 ### フロー承認（Update）性能検証
-
-### TiDB導入後のデータ検索チューニングについて
-
+下記の承認ボタンを押下したら、tt_wf_merchandise_plan、nd1track、wf_generworkflow、wf_generworkerlistなど四つのテーブルにそれぞれレコード更新を行い、承認ボタン押下から承認完了まで10秒以内完了でき、申請データなしの場合の反応時間と差がなしである
+![test16.png](img/test16.png) 
+![test17.png](img/test17.png) 
+### TiDB導入時データ検索チューニングについて
+* ビューの使用に控え目に
+ビューが絶対に利用できないのではありませんが、全てのRDBにはビューがテーブルのようにレコード集的な存在ではなく、ただのSQL文マクロ変数（変数名はビュー名である）みたいなものである認識を持たせてください。<br>
+ビューのSQL文はよくチューニングしていないと検索性能が出ません。又ビューを利用するとチューニングしずく、ビューのSQL文を合わせてチューニングすることを強く推薦する。
+* 検索条件、OrderByに表しているカラム、カラムの組合せに対してインデックスの追加は必須になる
+あまり沢山なインデックスを追加したら、データベース全体の性能に影響しかねないため、必要不可欠インデックスを原則としする。<br>
+※TiDB7.0(2024年5月リリース予定)からインデックス追加補助金ツールを提供する予定です。
+* OrderByの性能劣化のためについて
+複数テーブルの違いクラムでOrderByに使う場合、又同じテーブルに複数クラムで降順（インデックスにデフォルトで降順）以外でOrderByに設定する場合は性能劣化が発生しました。TiDBは将来のバージョン（2025年以降）で対応する予定ですが、上記の場合は現状プログラムのロジック修正にしかないのです。
