@@ -159,8 +159,8 @@ az aks nodepool upgrade --resource-group saas-core --cluster-name aeontidb --nam
 * テストアプリ画面でフローの承認などの作業をし、正常に動作できることが確認できました！
 ![k8sver18.png](img/k8sver18.png) 
 
-## TiDBバージョンアップ
-### バージョンアップ前の確認
+### TiDBバージョンアップ
+#### バージョンアップ前の確認
 * TiDBサービス確認
 ```
 kubectl get service -n tidb-cluster
@@ -169,7 +169,7 @@ kubectl get service -n tidb-cluster
 
 * バージョン確認
 ![tidb version](img/tidb-upgrade/002.png)
-### バージョンアップ実施
+#### バージョンアップ実施
 
 * バージョン設定
 ![edit config](img/tidb-upgrade/003.png)
@@ -178,7 +178,7 @@ kubectl get service -n tidb-cluster
 * バージョンアップ監視
 ![edit config](img/tidb-upgrade/005.gif)
 
-### バージョンアップ後の確認
+#### バージョンアップ後の確認
 ![tidb version](img/tidb-upgrade/006.png)
 
 ## TiDB性能検証 
