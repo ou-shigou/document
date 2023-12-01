@@ -177,7 +177,16 @@ TiDB検証テストデータ準備(#TiDB検証テストデータ準備)の節に
 以下は単テーブルCount性能検証、複数テーブルCount性能検証、多テーブル一覧検索性能検証、フロー新規（Insert）性能検証、フロー承認（Update）性能検証の順で性能検証を行う
 
 ### 単テーブルCount性能検証
-
+wf_generworkerlistのCount検証
+```
+select count(*) from wf_generworkerlist;
+```
+![test3.png](img/test3.png) 
+tt_wf_merchandise_planのプライベートキー（Oid）を対象にCount検証
+```
+select count(oid) from tt_wf_merchandise_plan;
+```
+![test4.png](img/test4.png) 
 ### 複数テーブルCount性能検証
 
 
