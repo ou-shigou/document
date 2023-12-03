@@ -314,7 +314,7 @@ tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxx
   ... ...
 }
 ```
-    ![container preparation](img/backup/005.png)
+![container preparation](img/backup/005.png)
   - コンテナ権限付与
 ```
 tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/blobServices/default/containers/dbbackup"
@@ -329,7 +329,7 @@ tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxx
   ... ...
 }
 ```
-    ![container preparation](img/backup/006.png)
+![container preparation](img/backup/006.png)
 #### kubernetesにクレデンシャル格納
 * kubernetesにクレデンシャル格納
 ```
@@ -342,7 +342,7 @@ tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE
 tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=tidb-cluster
 ```
 * サービスアカウント作成
-バックアップとリストア用のサービスアカウント作成。[リンクファイル](https://github.com/pingcap/tidb-operator/blob/v1.5.1/manifests/backup/backup-rbac.yaml)をダウンロードして、Kubernetesにサービスアカウントを作成すること。
+  バックアップとリストア用のサービスアカウント作成。[リンクファイル](https://github.com/pingcap/tidb-operator/blob/v1.5.1/manifests/backup/backup-rbac.yaml)をダウンロードして、Kubernetesにサービスアカウントを作成すること。
 ```
 tidb-on-aks$ more backup-rbac.yaml
 ---
@@ -394,7 +394,7 @@ serviceaccount/tidb-backup-manager created
 rolebinding.rbac.authorization.k8s.io/tidb-backup-manager created
 ```
 * クレデンシャルをTiDB Clusterにパッチ
-TiDBクラスターのTiKVノードからストレージアカウントへアクセスするために、ストレージアカウントのクレデンシャルをTiKVに環境変数としてパッチする。
+    TiDBクラスターのTiKVノードからストレージアカウントへアクセスするために、ストレージアカウントのクレデンシャルをTiKVに環境変数としてパッチする。
 ```
 tidb-on-aks$ kubectl exec jaytest-tikv-0 -n tidb-cluster  -- env | grep AZURE
 tidb-on-aks$ # Confirmed that no AZURE variable is set in the TiKV pods
@@ -459,7 +459,7 @@ spec:
 tidb-on-aks$ kubectl apply -f /tmp/full-backup-azblob.yaml -n backup-test
 backup.pingcap.com/demo1-full-backup-azblob-001 created
 ```
-    ![container preparation](img/backup/007.png)
+![container preparation](img/backup/007.png)
 #### フルバックアップからのリストア
 フルバックアップから新規TiDBクラスターにリストアする。リストア後のテーブルを確認すること。
 ```
