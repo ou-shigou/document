@@ -16,7 +16,7 @@ TiDB検証の詳細は下表のように纏めました。
 | NO | 検証内容 | 評価結果 | 備考 |
 | ---------- | -----------|-----------|-----------|
 | 1| TiDBのAzureクラウドインストール検証 | ◎ | Azureクラウドにインストールしたが、DX環境のインストールはまだ検証していない |
-| 2| TiDBセッキュリティ運用検証 | ◎ |  |
+| 2| TiDB運用とセッキュリティ検証 | ◎ |  |
 | 2.1| Kubunetesバージョンアップ検証 | ◎ | DX基盤ではBlue/Green運用と称する |
 | 2.2| データベースバックアップ検証 | ◎ |  |
 | 2.3| TiDBバージョンアップ | ◎ |  |
@@ -27,7 +27,8 @@ TiDB検証の詳細は下表のように纏めました。
 | 2.6| 多DBインスタンスの検証 | ◎ | インスタンス毎に細かくリリース振り分けできることを検証する |
 | 3| TiDB性能検証 | 〇 | |
 | 3.1| 大量データ参照 | ◎ | 三億行ほどのテーブルの参照 |
-| 3.2| OrderBy | 〇 | OrderBy対応に懸念が残ったため、一重まるを付けることに(上順と下順の組合せ) |
+| 3.2| スケーリングからの性能影響| ◎ | スケーリングアウトとスケーリングアップからサービスに影響が少ない |
+| 3.3| OrderBy | 〇 | OrderBy対応に懸念が残ったため(上順と下順の組合せ) 、一重まるを付けることに |
 
 ## TiDB検証環境準備
 
@@ -188,6 +189,76 @@ kubectl get service -n tidb-cluster
 
 #### バージョンアップ後の確認
 ![tidb version](img/tidb-upgrade/006.png)
+
+### バックアップとリストア検証
+#### 事前準備
+* アプリの登録
+tidb-on-aks$ az ad app create --display-name backup-reg-app
+```
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
+  "addIns": [],
+... ...
+    "logoutUrl": null,
+    "redirectUriSettings": [],
+    "redirectUris": []
+  }
+}
+```
+![app register](img/backup/001.png)
+* アプリのsecretの設定
+```
+tidb-on-aks$ az ad app list --display-name "backup-reg-app" | jq '.[0].appId'
+"xxxxxxxx-1234-abcd-xxxx-xxxxxx000001"
+tidb-on-aks$  az ad app credential reset --id "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --append 
+The output includes credentials that you must protect. Be sure that you do not include these credentials in your code or check the credentials into your source control. For more information, see https://aka.ms/azadsp-cli
+{
+  "appId": "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001",
+  "password": "XXxxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01",
+  "tenant": "xxxxxxxx-1234-abcd-xxxx-xxxx00000002"
+}
+tidb-on-aks$ az ad app credential list --id "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001"
+[
+  {
+    "customKeyIdentifier": null,
+    "displayName": null,
+    "endDateTime": "2024-12-01T02:40:16Z",
+    "hint": "VwR",
+    "keyId": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyy0002",
+    "secretText": null,
+    "startDateTime": "2023-12-01T02:40:16Z"
+  }
+]
+```
+![app register secret](img/backup/002.png)
+* プリンシパル作成
+```
+tidb-on-aks$ az ad sp create --id 01139ae6-58c7-4a7c-b360-fc8110e13fce
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
+  "accountEnabled": true,
+  "addIns": [],
+  "alternativeNames": [],
+  ... ...
+  "verifiedPublisher": {
+    "addedDateTime": null,
+    "displayName": null,
+    "verifiedPublisherId": null
+  }
+}
+```
+* 使用する変数
+  変数名 | 例
+  --- | ---
+  アプリ名 | backup-reg-app
+  secret ID | yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyy0002
+  Value | VwRxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01
+  appId(client id) | xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
+  tenant | xxxxxxxx-1234-abcd-xxxx-xxxx00000002
+#### フルバックアップ
+#### 継続的アーカイブログ
+#### フルバックアップからのリストア
+#### PITR
 
 ## TiDB性能検証 
 ### 性能検証概要
