@@ -5,7 +5,9 @@ TiDB検証検証報告書
 - [TiDB検証概要](#TiDB検証概要)
 - [TiDB検証環境準備](#TiDB検証環境準備)
 - [TiDB検証テストデータ準備](#TiDB検証テストデータ準備)
-- [TiDBセッキュリティ検証](#TiDBセッキュリティ検証)
+- [TiDB運用とセッキュリティ検証](#TiDB運用とセッキュリティ検証)
+  + [TiDBバージョンアップ](TiDBバージョンアップ)
+  + [バックアップとリストア検証](バックアップとリストア検証)
 - [TiDB性能検証](#TiDB性能検証)
 - [DX環境でのTiDBインストール](#DX環境でのTiDBインストール)
 ## TiDB検証目的
@@ -193,8 +195,8 @@ kubectl get service -n tidb-cluster
 ### バックアップとリストア検証
 #### 事前準備
 * アプリの登録
-tidb-on-aks$ az ad app create --display-name backup-reg-app
 ```
+tidb-on-aks$ az ad app create --display-name backup-reg-app
 {
   "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
   "addIns": [],
@@ -256,7 +258,7 @@ tidb-on-aks$ az ad sp create --id 01139ae6-58c7-4a7c-b360-fc8110e13fce
   appId(client id) | xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
   tenant | xxxxxxxx-1234-abcd-xxxx-xxxx00000002
 #### ストレージ準備
-* Azure Storage Account準備
+* Azure ストレージアカウント準備
 ```
 tidb-on-aks$ export RESOURCE_GROUP=resource_name_to_deploy
 tidb-on-aks$ az storage account create --name pingcapdbbackuptest --resource-group $RESOURCE_GROUP --allow-blob-public-access false --location "East US"
@@ -273,7 +275,7 @@ The public access to all blobs or containers in the storage account will be disa
 ```
 ![storage account preparation](img/backup/003.png)
 
-* Container準備
+* コンテナ準備
 ```
 tidb-on-aks$ az storage container create -n dbbackup --account-name pingcapdbbackuqptest
 {
@@ -283,12 +285,37 @@ tidb-on-aks$ az storage container create -n dbbackup --account-name pingcapdbbac
 ![container preparation](img/backup/004.png)
 
 * REGISTER APP権限付与
-リソース | ロール
---- | ---
-ストレージアカウント | Storage Blob Data Contributor
-ストレージアカウント | Storage Queue Data Contributor
-コンテナ |	Contributor
+  リソース | ロール
+  --- | ---
+  ストレージアカウント | Storage Blob Data Contributor
+  ストレージアカウント | Storage Queue Data Contributor
+  コンテナ |	Contributor
   - ストレージアカウント権限付与
+```
+tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Storage Blob Data Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOUIRCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest"
+{
+  "condition": null,
+  "conditionVersion": null,
+  "createdBy": null,
+  "createdOn": "2023-12-01T14:16:26.166195+00:00",
+  "delegatedManagedIdentityResourceId": null,
+  "description": null,
+  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/providers/Microsoft.Authorization/roleAssignments/22f1ac17-572c-4a57-a5cd-143b033f13ba",
+  ... ...
+}
+tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Storage Queue Data Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest"
+{
+  "condition": null,
+  "conditionVersion": null,
+  "createdBy": null,
+  "createdOn": "2023-12-01T14:21:06.453272+00:00",
+  "delegatedManagedIdentityResourceId": null,
+  "description": null,
+  ... ...
+}
+```
+    ![container preparation](img/backup/005.png)
+  - コンテナ権限付与
 ```
 tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/blobServices/default/containers/dbbackup"
 {
@@ -301,37 +328,11 @@ tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxx
   "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/blobServices/default/containers/dbbackup",
   ... ...
 }
-tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Storage Blob Data Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOUIRCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest"
-{
-  "condition": null,
-  "conditionVersion": null,
-  "createdBy": null,
-  "createdOn": "2023-12-01T14:16:26.166195+00:00",
-  "delegatedManagedIdentityResourceId": null,
-  "description": null,
-  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/providers/Microsoft.Authorization/roleAssignments/22f1ac17-572c-4a57-a5cd-143b033f13ba",
-  ... ...
-}
 ```
-    ![container preparation](img/backup/005.png)
-  - コンテナ権限付与
-    ```
-tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Storage Queue Data Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/blobServices/default/containers/dbbackup"
-{
-  "condition": null,
-  "conditionVersion": null,
-  "createdBy": null,
-  "createdOn": "2023-12-01T14:21:06.453272+00:00",
-  "delegatedManagedIdentityResourceId": null,
-  "description": null,
-  ... ...
-}
-
-    ```
     ![container preparation](img/backup/006.png)
 #### kubernetesにクレデンシャル格納
 * kubernetesにクレデンシャル格納
-     ```
+```
 tidb-on-aks$ export AZURE_STORAGE_ACCOUNT=pingcapdbbackuqptest
 tidb-on-aks$ export AZURE_CLIENT_ID=xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
 tidb-on-aks$ export AD_TENANT_ID=xxxxxxxx-1234-abcd-xxxx-xxxx00000002
@@ -339,10 +340,10 @@ tidb-on-aks$ export SECRET_VALUE=VwRxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01
 tidb-on-aks$ kubectl create namespace backup-test
 tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=backup-test
 tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=tidb-cluster
-     ```
+```
 * サービスアカウント作成
 バックアップとリストア用のサービスアカウント作成。[リンクファイル](https://github.com/pingcap/tidb-operator/blob/v1.5.1/manifests/backup/backup-rbac.yaml)をダウンロードして、Kubernetesにサービスアカウントを作成すること。
-    ```
+```
 tidb-on-aks$ more backup-rbac.yaml
 ---
 kind: Role
@@ -391,10 +392,10 @@ tidb-on-aks$ kubectl create -f backup-rbac.yaml -n restore-test
 role.rbac.authorization.k8s.io/tidb-backup-manager created
 serviceaccount/tidb-backup-manager created
 rolebinding.rbac.authorization.k8s.io/tidb-backup-manager created
-    ```
+```
 * クレデンシャルをTiDB Clusterにパッチ
 TiDBクラスターのTiKVノードからストレージアカウントへアクセスするために、ストレージアカウントのクレデンシャルをTiKVに環境変数としてパッチする。
-   ```
+```
 tidb-on-aks$ kubectl exec jaytest-tikv-0 -n tidb-cluster  -- env | grep AZURE
 tidb-on-aks$ # Confirmed that no AZURE variable is set in the TiKV pods
 tidb-on-aks$ more /tmp/merge.json
@@ -406,10 +407,10 @@ AZURE_STORAGE_ACCOUNT=pingcapdbbackuptest
 AZURE_TENANT_ID=xxxxxxxx-1234-abcd-xxxx-xxxx00000002
 AZURE_CLIENT_ID=xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
 AZURE_CLIENT_SECRET=VwRxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01
-   ```
+```
 #### 継続的アーカイブログ
 下記のジョブで継続的アーカイブログを有効にする。
-    ```
+```
 tidb-on-aks$ more /tmp/log-backup-azblob.yaml
 ---
 apiVersion: pingcap.com/v1alpha1
@@ -433,10 +434,10 @@ backup.pingcap.com/demo-log-backup-azblob created
 tidb-on-aks$ kubectl get backup -n backup-test 
 NAME                           TYPE   MODE       STATUS     BACKUPPATH                                 BACKUPSIZE   COMMITTS             LOGTRUNCATEUNTIL   TIMETAKEN   AGE
 demo-log-backup-azblob                log        Running    azure://dbbackup/pitr-log/                              446043223075848194                                  36s
-    ```
+```
 #### フルバックアップ
 下記に作成したバックアップのジョブを利用して、フルデータベースのバックアップをストレージアカウントに取る。
-    ```
+```
 tidb-on-aks workstation$ more /tmp/full-backup-azblob.yaml
 ---
 apiVersion: pingcap.com/v1alpha1
@@ -457,11 +458,11 @@ spec:
     accessTier: Cool
 tidb-on-aks$ kubectl apply -f /tmp/full-backup-azblob.yaml -n backup-test
 backup.pingcap.com/demo1-full-backup-azblob-001 created
-    ```
+```
     ![container preparation](img/backup/007.png)
 #### フルバックアップからのリストア
 フルバックアップから新規TiDBクラスターにリストアする。リストア後のテーブルを確認すること。
-    ```
+```
 tidb-on-aks$ kubectl create namespace restore-test
 tidb-on-aks$ kubectl apply -f /tmp/backup-rbac.yaml -n restore-test
 tidb-on-aks$kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=restore-test
@@ -502,10 +503,10 @@ MySQL [test]> select count(*) from test01;
 |     2560 |
 +----------+
 1 row in set (0.007 sec)
-    ```
+```
 #### PITR
 フルバックアップと継続的アーカイブログからPITRを行う。
-    ```
+```
 tidb-on-aks$ more /tmp/restore-point-azblob.yaml 
 ---
 apiVersion: pingcap.com/v1alpha1
@@ -530,7 +531,7 @@ spec:
       prefix: pitr-log
 tidb-on-aks$ kubectl apply -f /tmp/restore-point-azblob.yaml -n restore-test 
 restore.pingcap.com/demo-restore-azblob configured
-    ```
+```
 
 ## TiDB性能検証 
 ### 性能検証概要
