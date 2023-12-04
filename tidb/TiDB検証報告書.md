@@ -16,7 +16,7 @@ TiDB検証の詳細は下表のように纏めました。
 | NO | 検証内容 | 評価結果 | 備考 |
 | ---------- | -----------|-----------|-----------|
 | 1| TiDBのAzureクラウドインストール検証 | ◎ | Azureクラウドにインストールしたが、DX環境のインストールはまだ検証していない |
-| 2| TiDBセッキュリティ運用検証 | ◎ |  |
+| 2| TiDB運用とセッキュリティ検証 | ◎ |  |
 | 2.1| Kubunetesバージョンアップ検証 | ◎ | DX基盤ではBlue/Green運用と称する |
 | 2.2| データベースバックアップ検証 | ◎ |  |
 | 2.3| TiDBバージョンアップ | ◎ |  |
@@ -27,7 +27,9 @@ TiDB検証の詳細は下表のように纏めました。
 | 2.6| 多DBインスタンスの検証 | ◎ | インスタンス毎に細かくリリース振り分けできることを検証する |
 | 3| TiDB性能検証 | 〇 | |
 | 3.1| 大量データ参照 | ◎ | 三億行ほどのテーブルの参照 |
-| 3.2| OrderBy | 〇 | OrderBy対応に懸念が残ったため、一重まるを付けることに(上順と下順の組合せ) |
+| 3.2| スケーリングからの性能影響| ◎ | スケーリングアウトとスケーリングアップからサービスに影響が少ない |
+| 3.3| OrderBy | 〇 | OrderBy対応に懸念が残ったため(上順と下順の組合せ) 、一重まるを付けることに |
+
 
 ## TiDB検証環境準備
 
@@ -166,7 +168,539 @@ az aks nodepool upgrade --resource-group saas-core --cluster-name aeontidb --nam
 
 * テストアプリ画面でフローの承認などの作業をし、正常に動作できることが確認できました！
 ![k8sver18.png](img/k8sver18.png) 
+### TiDBバージョンアップ
+#### バージョンアップ前の確認
+* TiDBサービス確認
+```
+kubectl get service -n tidb-cluster
+```
+![tidb cluster service](img/tidb-upgrade/001.png)
 
+* バージョン確認
+![tidb version](img/tidb-upgrade/002.png)
+#### バージョンアップ実施
+
+* バージョン設定
+![edit config](img/tidb-upgrade/003.png)
+![edit config](img/tidb-upgrade/004.png)
+
+* バージョンアップ監視
+![edit config](img/tidb-upgrade/005.gif)
+
+#### バージョンアップ後の確認
+![tidb version](img/tidb-upgrade/006.png)
+
+### バックアップとリストア検証
+#### 事前準備
+* アプリの登録
+```
+tidb-on-aks$ az ad app create --display-name backup-reg-app
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#applications/$entity",
+  "addIns": [],
+... ...
+    "logoutUrl": null,
+    "redirectUriSettings": [],
+    "redirectUris": []
+  }
+}
+```
+![app register](img/backup/001.png)
+* アプリのsecretの設定
+```
+tidb-on-aks$ az ad app list --display-name "backup-reg-app" | jq '.[0].appId'
+"xxxxxxxx-1234-abcd-xxxx-xxxxxx000001"
+tidb-on-aks$  az ad app credential reset --id "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --append 
+The output includes credentials that you must protect. Be sure that you do not include these credentials in your code or check the credentials into your source control. For more information, see https://aka.ms/azadsp-cli
+{
+  "appId": "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001",
+  "password": "XXxxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01",
+  "tenant": "xxxxxxxx-1234-abcd-xxxx-xxxx00000002"
+}
+tidb-on-aks$ az ad app credential list --id "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001"
+[
+  {
+    "customKeyIdentifier": null,
+    "displayName": null,
+    "endDateTime": "2024-12-01T02:40:16Z",
+    "hint": "VwR",
+    "keyId": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyy0002",
+    "secretText": null,
+    "startDateTime": "2023-12-01T02:40:16Z"
+  }
+]
+```
+![app register secret](img/backup/002.png)
+* プリンシパル作成
+```
+tidb-on-aks$ az ad sp create --id 01139ae6-58c7-4a7c-b360-fc8110e13fce
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#servicePrincipals/$entity",
+  "accountEnabled": true,
+  "addIns": [],
+  "alternativeNames": [],
+  ... ...
+  "verifiedPublisher": {
+    "addedDateTime": null,
+    "displayName": null,
+    "verifiedPublisherId": null
+  }
+}
+```
+* 使用する変数
+  変数名 | 例
+  --- | ---
+  アプリ名 | backup-reg-app
+  secret ID | yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyy0002
+  Value | VwRxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01
+  appId(client id) | xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
+  tenant | xxxxxxxx-1234-abcd-xxxx-xxxx00000002
+#### ストレージ準備
+* Azure ストレージアカウント準備
+```
+tidb-on-aks$ export RESOURCE_GROUP=resource_name_to_deploy
+tidb-on-aks$ az storage account create --name pingcapdbbackuptest --resource-group $RESOURCE_GROUP --allow-blob-public-access false --location "East US"
+The public access to all blobs or containers in the storage account will be disallowed by default in the future, which means default value for --allow-blob-public-access is still null but will be equivalent to false.
+{                         
+  "accessTier": "Hot",          
+  "allowBlobPublicAccess": false,
+  "allowCrossTenantReplication": null,
+  "allowSharedKeyAccess": null,
+  ... ...
+  "tags": {},
+  "type": "Microsoft.Storage/storageAccounts"
+}
+```
+![storage account preparation](img/backup/003.png)
+
+* コンテナ準備
+```
+tidb-on-aks$ az storage container create -n dbbackup --account-name pingcapdbbackuqptest
+{
+  "created": true
+}
+```
+![container preparation](img/backup/004.png)
+
+* REGISTER APP権限付与
+  リソース | ロール
+  --- | ---
+  ストレージアカウント | Storage Blob Data Contributor
+  ストレージアカウント | Storage Queue Data Contributor
+  コンテナ |	Contributor
+  - ストレージアカウント権限付与
+```
+tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Storage Blob Data Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOUIRCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest"
+{
+  "condition": null,
+  "conditionVersion": null,
+  "createdBy": null,
+  "createdOn": "2023-12-01T14:16:26.166195+00:00",
+  "delegatedManagedIdentityResourceId": null,
+  "description": null,
+  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/providers/Microsoft.Authorization/roleAssignments/22f1ac17-572c-4a57-a5cd-143b033f13ba",
+  ... ...
+}
+tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Storage Queue Data Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest"
+{
+  "condition": null,
+  "conditionVersion": null,
+  "createdBy": null,
+  "createdOn": "2023-12-01T14:21:06.453272+00:00",
+  "delegatedManagedIdentityResourceId": null,
+  "description": null,
+  ... ...
+}
+```
+![container preparation](img/backup/005.png)
+  - コンテナ権限付与
+```
+tidb-on-aks$ az role assignment create --assignee "xxxxxxxx-1234-abcd-xxxx-xxxxxx000001" --role "Contributor" --scope "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/blobServices/default/containers/dbbackup"
+{
+  "condition": null,
+  "conditionVersion": null,
+  "createdBy": null,
+  "createdOn": "2023-12-01T08:29:10.402947+00:00",
+  "delegatedManagedIdentityResourceId": null,
+  "description": null,
+  "id": "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Storage/storageAccounts/pingcapdbbackuptest/blobServices/default/containers/dbbackup",
+  ... ...
+}
+```
+![container preparation](img/backup/006.png)
+#### kubernetesにクレデンシャル格納
+* kubernetesにクレデンシャル格納
+```
+tidb-on-aks$ export AZURE_STORAGE_ACCOUNT=pingcapdbbackuqptest
+tidb-on-aks$ export AZURE_CLIENT_ID=xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
+tidb-on-aks$ export AD_TENANT_ID=xxxxxxxx-1234-abcd-xxxx-xxxx00000002
+tidb-on-aks$ export SECRET_VALUE=VwRxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01
+tidb-on-aks$ kubectl create namespace backup-test
+tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=backup-test
+tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=tidb-cluster
+```
+* サービスアカウント作成  
+バックアップとリストア用のサービスアカウント作成。[リンクファイル](https://github.com/pingcap/tidb-operator/blob/v1.5.1/manifests/backup/backup-rbac.yaml)をダウンロードして、Kubernetesにサービスアカウントを作成すること。
+```
+tidb-on-aks$ more backup-rbac.yaml
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tidb-backup-manager
+  labels:
+    app.kubernetes.io/component: tidb-backup-manager
+rules:
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["*"]
+- apiGroups: ["pingcap.com"]
+  resources: ["backups", "restores"]
+  verbs: ["get", "watch", "list", "update"]
+
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: tidb-backup-manager
+
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: tidb-backup-manager
+  labels:
+    app.kubernetes.io/component: tidb-backup-manager
+subjects:
+- kind: ServiceAccount
+  name: tidb-backup-manager
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tidb-backup-manager
+
+tidb-on-aks$ # The rbac is created after the namespace of backup-test is created
+tidb-on-aks$ kubectl create -f backup-rbac.yaml -n backup-test
+role.rbac.authorization.k8s.io/tidb-backup-manager created
+serviceaccount/tidb-backup-manager created
+rolebinding.rbac.authorization.k8s.io/tidb-backup-manager created
+
+tidb-on-aks$ # The rbac is created after the namespace of restore-test is created
+tidb-on-aks$ kubectl create -f backup-rbac.yaml -n restore-test
+role.rbac.authorization.k8s.io/tidb-backup-manager created
+serviceaccount/tidb-backup-manager created
+rolebinding.rbac.authorization.k8s.io/tidb-backup-manager created
+```
+* クレデンシャルをTiDB Clusterにパッチ  
+TiDBクラスターのTiKVノードからストレージアカウントへアクセスするために、ストレージアカウントのクレデンシャルをTiKVに環境変数としてパッチする。
+```
+tidb-on-aks$ kubectl exec jaytest-tikv-0 -n tidb-cluster  -- env | grep AZURE
+tidb-on-aks$ # Confirmed that no AZURE variable is set in the TiKV pods
+tidb-on-aks$ more /tmp/merge.json
+{"spec":{"tikv":{"envFrom":[{"secretRef":{"name":"azblob-secret-ad"}}]}}}
+tidb-on-aks$ kubectl patch tc jaytest001 -n tidb-cluster --type merge --patch-file /tmp/merge.json
+tidbcluster.pingcap.com/jaytest001 patched
+tidb-on-aks workstation$ kubectl exec jaytest-tikv-0 -n tidb-cluster  -- env | grep AZURE
+AZURE_STORAGE_ACCOUNT=pingcapdbbackuptest
+AZURE_TENANT_ID=xxxxxxxx-1234-abcd-xxxx-xxxx00000002
+AZURE_CLIENT_ID=xxxxxxxx-1234-abcd-xxxx-xxxxxx000001
+AZURE_CLIENT_SECRET=VwRxQ~xxxxxxxxXXXX_~xxxxxxxxxxXXXXXXXX01
+```
+#### 継続的アーカイブログ
+下記のジョブで継続的アーカイブログを有効にする。
+```
+tidb-on-aks$ more /tmp/log-backup-azblob.yaml
+---
+apiVersion: pingcap.com/v1alpha1
+kind: Backup
+metadata:
+  name: demo-log-backup-azblob
+  namespace: backup-test
+spec:
+  backupMode: log
+  br:
+    cluster: jaytest001
+    clusterNamespace: tidb-cluster
+    sendCredToTikv: false
+  azblob:
+    secretName: azblob-secret-ad
+    container: dbbackup
+    prefix: pitr-log
+    #accessTier: Hot
+tidb-on-aks$ kubectl apply -f /tmp/log-backup-azblob.yaml -n backup-test
+backup.pingcap.com/demo-log-backup-azblob created
+tidb-on-aks$ kubectl get backup -n backup-test 
+NAME                           TYPE   MODE       STATUS     BACKUPPATH                                 BACKUPSIZE   COMMITTS             LOGTRUNCATEUNTIL   TIMETAKEN   AGE
+demo-log-backup-azblob                log        Running    azure://dbbackup/pitr-log/                              446043223075848194                                  36s
+```
+#### フルバックアップ
+下記に作成したバックアップのジョブを利用して、フルデータベースのバックアップをストレージアカウントに取る。
+```
+tidb-on-aks workstation$ more /tmp/full-backup-azblob.yaml
+---
+apiVersion: pingcap.com/v1alpha1
+kind: Backup
+metadata:
+  name: demo1-full-backup-azblob-001
+  namespace: backup-test
+spec:
+  backupType: full
+  br:
+    cluster: jaytest001
+    clusterNamespace: tidb-cluster
+    sendCredToTikv: false
+  azblob:
+    secretName: azblob-secret-ad
+    container: dbbackup
+    prefix: full-backup-folder/001
+    accessTier: Cool
+tidb-on-aks$ kubectl apply -f /tmp/full-backup-azblob.yaml -n backup-test
+backup.pingcap.com/demo1-full-backup-azblob-001 created
+```
+![container preparation](img/backup/007.png)
+#### フルバックアップからのリストア
+フルバックアップから新規TiDBクラスターにリストアする。リストア後のテーブルを確認すること。
+```
+tidb-on-aks$ kubectl create namespace restore-test
+tidb-on-aks$ kubectl apply -f /tmp/backup-rbac.yaml -n restore-test
+tidb-on-aks$ kubectl create secret generic azblob-secret-ad --from-literal=AZURE_STORAGE_ACCOUNT=${AZURE_STORAGE_ACCOUNT} --from-literal=AZURE_CLIENT_ID=${AZURE_CLIENT_ID} --from-literal=AZURE_TENANT_ID=${AD_TENANT_ID} --from-literal=AZURE_CLIENT_SECRET=${SECRET_VALUE} --namespace=restore-test
+secret/azblob-secret-ad created
+tidb-on-aks$ more /tmp/restore-full-azblob.yaml
+---
+apiVersion: pingcap.com/v1alpha1
+kind: Restore
+metadata:
+  name: demo-restore-azblob
+  namespace: restore-test
+spec:
+  br:
+    cluster: jaytest001
+    clusterNamespace: tidb-cluster
+    sendCredToTikv: false
+  azblob:
+    secretName: azblob-secret-ad
+    container: dbbackup
+    prefix: full-backup-folder/001
+tidb-on-aks$ kubectl apply -f /tmp/restore-full-azblob.yaml -n restore-test
+tidb-on-aks$ kubectl get restore -n restore-test 
+NAME                  STATUS     TIMETAKEN   COMMITTS             AGE
+demo-restore-azblob   Complete   3s          446045655929454593   65m
+
+MySQL [test]> show tables; 
++----------------+
+| Tables_in_test |
++----------------+
+| test01         |
++----------------+
+1 row in set (0.002 sec)
+
+MySQL [test]> select count(*) from test01; 
++----------+
+| count(*) |
++----------+
+|     2560 |
++----------+
+1 row in set (0.007 sec)
+```
+#### PITR
+フルバックアップと継続的アーカイブログからPITRを行う。
+```
+tidb-on-aks$ more /tmp/restore-point-azblob.yaml 
+---
+apiVersion: pingcap.com/v1alpha1
+kind: Restore
+metadata:
+  name: demo-restore-azblob
+  namespace: restore-test
+spec:
+  restoreMode: pitr
+  br:
+    cluster: jaytest001
+    clusterNamespace: tidb-cluster
+  azblob:
+    secretName: azblob-secret-ad
+    container: dbbackup
+    prefix: full-backup-folder/001 
+  pitrRestoredTs: "2023-12-03T01:32:00+09:00"
+  pitrFullBackupStorageProvider:
+    azblob:
+      secretName: azblob-secret-ad
+      container: dbbackup
+      prefix: pitr-log
+tidb-on-aks$ kubectl apply -f /tmp/restore-point-azblob.yaml -n restore-test 
+restore.pingcap.com/demo-restore-azblob configured
+```
+
+### 柔軟なスケリング
+* ノード数を3から6まで増加
+```
+workstation$ az aks nodepool scale --cluster-name jaytest001 --name newtikv --resource-group azure-jp-tech-team --node-count 6
+... ...
+workstation$ az aks nodepool show --cluster-name jaytest001 --name newtikv --resource-group azure-jp-tech-team
+{                                                                                         
+  "availabilityZones": [
+    "1",                          
+    "2",            
+    "3"
+  ],                           
+  "count": 6,          
+  "creationData": null,  
+  "currentOrchestratorVersion": "1.25.11",
+  ... ...
+```
+* TiKV スケールアウト
+```
+workstation$ more tidb-cluster.org
+... ...
+  tikv:
+    baseImage: pingcap/tikv
+    maxFailoverCount: 0
+    replicas: 6
+    requests:
+      storage: "1024Gi"
+    storageClassName: managed-csi
+    config: {}
+    nodeSelector:
+      dedicated: jaytest001-tikv
+    tolerations:
+    - effect: NoSchedule
+      key: dedicated
+      operator: Equal
+      value: jaytest001-tikv
+    affinity:
+      podAntiAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+            - key: app.kubernetes.io/component
+              operator: In
+              values:
+              - tikv
+          topologyKey: kubernetes.io/hostname
+... ...
+workstation$ kubectl get pods -n tidb-cluster
+NAME                                    READY   STATUS    RESTARTS   AGE
+jaytest001-discovery-85976b8d88-b6gfn   1/1     Running   0          141m
+jaytest001-pd-0                         1/1     Running   0          141m
+jaytest001-pd-1                         1/1     Running   0          141m
+jaytest001-pd-2                         1/1     Running   0          141m
+jaytest001-ticdc-0                      1/1     Running   0          139m
+jaytest001-ticdc-1                      1/1     Running   0          139m
+jaytest001-ticdc-2                      1/1     Running   0          139m
+jaytest001-tidb-0                       2/2     Running   0          139m
+jaytest001-tidb-1                       2/2     Running   0          139m
+jaytest001-tikv-0                       1/1     Running   0          53m
+jaytest001-tikv-1                       1/1     Running   0          50m
+jaytest001-tikv-2                       1/1     Running   0          49m
+workstation$ kubectl apply -f tidb-cluster.yaml -n tidb-cluster
+tidbcluster.pingcap.com/jaytest001 configured
+workstation$ kubectl get pods -n tidb-cluster
+NAME                                    READY   STATUS              RESTARTS   AGE
+jaytest001-discovery-85976b8d88-b6gfn   1/1     Running             0          142m
+jaytest001-pd-0                         1/1     Running             0          142m
+jaytest001-pd-1                         1/1     Running             0          142m
+jaytest001-pd-2                         1/1     Running             0          142m
+jaytest001-ticdc-0                      1/1     Running             0          141m
+jaytest001-ticdc-1                      1/1     Running             0          141m
+jaytest001-ticdc-2                      1/1     Running             0          141m
+jaytest001-tidb-0                       2/2     Running             0          141m
+jaytest001-tidb-1                       2/2     Running             0          141m
+jaytest001-tikv-0                       1/1     Running             0          54m
+jaytest001-tikv-1                       1/1     Running             0          52m
+jaytest001-tikv-2                       1/1     Running             0          51m
+jaytest001-tikv-3                       0/1     ContainerCreating   0          29s
+jaytest001-tikv-4                       0/1     ContainerCreating   0          29s
+jaytest001-tikv-5                       0/1     ContainerCreating   0          28s
+```
+* 増加したノードの確認
+```
+workstation$ kubectl get pods -o wide -n tidb-cluster
+NAME                                    READY   STATUS    RESTARTS   AGE    IP            NODE                                NOMINATED NODE   READINESS GATES
+jaytest001-discovery-85976b8d88-b6gfn   1/1     Running   0          143m   10.244.0.18   aks-agentpool-20070760-vmss000000   <none>           <none>
+jaytest001-pd-0                         1/1     Running   0          143m   10.244.2.3    aks-pd-41925797-vmss000002          <none>           <none>
+jaytest001-pd-1                         1/1     Running   0          143m   10.244.11.3   aks-pd-41925797-vmss000001          <none>           <none>
+jaytest001-pd-2                         1/1     Running   0          143m   10.244.1.3    aks-pd-41925797-vmss000000          <none>           <none>
+jaytest001-ticdc-0                      1/1     Running   0          141m   10.244.10.3   aks-ticdc-37156663-vmss000000       <none>           <none>
+jaytest001-ticdc-1                      1/1     Running   0          141m   10.244.9.3    aks-ticdc-37156663-vmss000001       <none>           <none>
+jaytest001-ticdc-2                      1/1     Running   0          141m   10.244.6.3    aks-ticdc-37156663-vmss000002       <none>           <none>
+jaytest001-tidb-0                       2/2     Running   0          141m   10.244.7.3    aks-tidb-32471927-vmss000001        <none>           <none>
+jaytest001-tidb-1                       2/2     Running   0          141m   10.244.5.3    aks-tidb-32471927-vmss000000        <none>           <none>
+jaytest001-tikv-0                       1/1     Running   0          55m    10.244.14.2   aks-newtikv-12483745-vmss000001     <none>           <none>
+jaytest001-tikv-1                       1/1     Running   0          52m    10.244.13.2   aks-newtikv-12483745-vmss000002     <none>           <none>
+jaytest001-tikv-2                       1/1     Running   0          51m    10.244.12.2   aks-newtikv-12483745-vmss000000     <none>           <none>
+jaytest001-tikv-3                       1/1     Running   0          71s    10.244.15.2   aks-newtikv-12483745-vmss000004     <none>           <none>
+jaytest001-tikv-4                       1/1     Running   0          71s    10.244.16.2   aks-newtikv-12483745-vmss000005     <none>           <none>
+jaytest001-tikv-5                       1/1     Running   0          70s    10.244.17.2   aks-newtikv-12483745-vmss000003     <none>           <none>
+workstation$ kubectl get pv -n tidb-cluster
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                            STORAGECLASS   REASON   AGE
+pvc-1b4b64b4-5477-47ef-8536-a17183b326af   10Gi       RWO            Retain           Bound    default/pd-jaytest001-pd-0       managed-csi             3h2m
+pvc-1bfbd067-0e62-4841-97b8-ec842cc02a2f   1Ti        RWO            Retain           Bound    default/tikv-jaytest001-tikv-0   managed-csi             3h1m
+pvc-4d62fbf7-4848-47d8-ad9d-0cf0cb5381e0   10Gi       RWO            Retain           Bound    default/pd-jaytest001-pd-1       managed-csi             3h2m
+pvc-57fd1573-885b-4fc4-982c-2e272c718f2d   1Ti        RWO            Retain           Bound    default/tikv-jaytest001-tikv-4   managed-csi             9m58s
+pvc-b752de53-34de-4ce9-96c9-c37035b13188   1Ti        RWO            Retain           Bound    default/tikv-jaytest001-tikv-2   managed-csi             3h1m
+pvc-b75edfa4-eb6f-4272-8ef3-c74df7b24903   1Ti        RWO            Retain           Bound    default/tikv-jaytest001-tikv-3   managed-csi             9m58s
+pvc-d61381c0-b96c-4627-98a0-93995d532c55   1Ti        RWO            Retain           Bound    default/tikv-jaytest001-tikv-1   managed-csi             3h1m
+pvc-e448f349-f842-4033-8424-2ce437f1aa82   1Ti        RWO            Retain           Bound    default/tikv-jaytest001-tikv-5   managed-csi             9m58s
+pvc-fca71a43-bfbd-48a4-a8fe-a6f71efc74de   10Gi       RWO            Retain           Bound    default/pd-jaytest001-pd-2       managed-csi             3h2m
+workstation$ kubectl get pvc -n tidb-cluster
+NAME                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+pd-jaytest001-pd-0       Bound    pvc-1b4b64b4-5477-47ef-8536-a17183b326af   10Gi       RWO            managed-csi    3h2m
+pd-jaytest001-pd-1       Bound    pvc-4d62fbf7-4848-47d8-ad9d-0cf0cb5381e0   10Gi       RWO            managed-csi    3h2m
+pd-jaytest001-pd-2       Bound    pvc-fca71a43-bfbd-48a4-a8fe-a6f71efc74de   10Gi       RWO            managed-csi    3h2m
+tikv-jaytest001-tikv-0   Bound    pvc-1bfbd067-0e62-4841-97b8-ec842cc02a2f   1Ti        RWO            managed-csi    3h2m
+tikv-jaytest001-tikv-1   Bound    pvc-d61381c0-b96c-4627-98a0-93995d532c55   1Ti        RWO            managed-csi    3h2m
+tikv-jaytest001-tikv-2   Bound    pvc-b752de53-34de-4ce9-96c9-c37035b13188   1Ti        RWO            managed-csi    3h2m
+tikv-jaytest001-tikv-3   Bound    pvc-b75edfa4-eb6f-4272-8ef3-c74df7b24903   1Ti        RWO            managed-csi    10m
+tikv-jaytest001-tikv-4   Bound    pvc-57fd1573-885b-4fc4-982c-2e272c718f2d   1Ti        RWO            managed-csi    10m
+tikv-jaytest001-tikv-5   Bound    pvc-e448f349-f842-4033-8424-2ce437f1aa82   1Ti        RWO            managed-csi    10m
+```
+### オンラインディスク拡張
+* TiKVディスクサイズ確認
+```
+workstation$ kubectl get pvc -n tidb-cluster
+NAME                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+pd-jaytest001-pd-0       Bound    pvc-1b4b64b4-5477-47ef-8536-a17183b326af   10Gi       RWO            managed-csi    87m
+pd-jaytest001-pd-1       Bound    pvc-4d62fbf7-4848-47d8-ad9d-0cf0cb5381e0   10Gi       RWO            managed-csi    87m
+pd-jaytest001-pd-2       Bound    pvc-fca71a43-bfbd-48a4-a8fe-a6f71efc74de   10Gi       RWO            managed-csi    87m
+tikv-jaytest001-tikv-0   Bound    pvc-1bfbd067-0e62-4841-97b8-ec842cc02a2f   512Gi      RWO            managed-csi    86m
+tikv-jaytest001-tikv-1   Bound    pvc-d61381c0-b96c-4627-98a0-93995d532c55   512Gi      RWO            managed-csi    86m
+tikv-jaytest001-tikv-2   Bound    pvc-b752de53-34de-4ce9-96c9-c37035b13188   512Gi      RWO            managed-csi    86m
+```
+
+* KubernetesのPVCに対するパッチを行う
+```
+workstation$ kubectl patch pvc tikv-jaytest001-tikv-0 --type merge --patch '{"spec": {"resources": {"requests": {"storage": "1024Gi"}}}}'
+workstation$ kubectl patch pvc tikv-jaytest001-tikv-1 --type merge --patch '{"spec": {"resources": {"requests": {"storage": "1024Gi"}}}}'
+workstation$ kubectl patch pvc tikv-jaytest001-tikv-2 --type merge --patch '{"spec": {"resources": {"requests": {"storage": "1024Gi"}}}}'
+workstation$ $ kubectl get pv 
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                            STORAGECLASS   REASON   AGE
+pvc-1b4b64b4-5477-47ef-8536-a17183b326af   10Gi       RWO            Retain           Bound    default/pd-jaytest001-pd-0       managed-csi             90m
+pvc-1bfbd067-0e62-4841-97b8-ec842cc02a2f   512Gi      RWO            Retain           Bound    default/tikv-jaytest001-tikv-0   managed-csi             89m
+pvc-4d62fbf7-4848-47d8-ad9d-0cf0cb5381e0   10Gi       RWO            Retain           Bound    default/pd-jaytest001-pd-1       managed-csi             90m
+pvc-b752de53-34de-4ce9-96c9-c37035b13188   512Gi      RWO            Retain           Bound    default/tikv-jaytest001-tikv-2   managed-csi             89m
+pvc-d61381c0-b96c-4627-98a0-93995d532c55   512Gi      RWO            Retain           Bound    default/tikv-jaytest001-tikv-1   managed-csi             89m
+pvc-fca71a43-bfbd-48a4-a8fe-a6f71efc74de   10Gi       RWO            Retain           Bound    default/pd-jaytest001-pd-2       managed-csi             90m
+```
+
+* 拡張したディスクの確認
+```
+workstation$ # wait 10 minutes
+workstation$ kubectl get pvc
+NAME                     STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+pd-jaytest001-pd-0       Bound    pvc-1b4b64b4-5477-47ef-8536-a17183b326af   10Gi       RWO            managed-csi    93m
+pd-jaytest001-pd-1       Bound    pvc-4d62fbf7-4848-47d8-ad9d-0cf0cb5381e0   10Gi       RWO            managed-csi    93m
+pd-jaytest001-pd-2       Bound    pvc-fca71a43-bfbd-48a4-a8fe-a6f71efc74de   10Gi       RWO            managed-csi    93m
+tikv-jaytest001-tikv-0   Bound    pvc-1bfbd067-0e62-4841-97b8-ec842cc02a2f   1Ti        RWO            managed-csi    93m
+tikv-jaytest001-tikv-1   Bound    pvc-d61381c0-b96c-4627-98a0-93995d532c55   1Ti        RWO            managed-csi    93m
+tikv-jaytest001-tikv-2   Bound    pvc-b752de53-34de-4ce9-96c9-c37035b13188   1Ti        RWO            managed-csi    93m
+
+workstation$ kubectl exec -it jaytest001-tikv-0 -- sh 
+/ # df -h 
+Filesystem                Size      Used Available Use% Mounted on
+... ...
+/dev/sdb               1007.4G      5.2G   1002.2G   1% /var/lib/tikv
+... ...
+```
 ## TiDB性能検証 
 ### 性能検証概要
 TiDB検証テストデータ準備(#TiDB検証テストデータ準備)の節にも紹介したように三つのワークフローにそれぞれ5000万件のフローテストデータを作成しました。以下の各テーブルのデータボリューム詳細情報です。
