@@ -1,4 +1,5 @@
 # AKS Disk Class Type
+ ![img_1.png](img/img_8-1.png)
 ### 块存储
 在 Azure Kubernetes Service (AKS) 中，`azurefile`、`azurefile-csi`、`azurefile-csi-premium` 和 `azurefile-premium` 这四个存储类的主要区别在于它们使用的存储类型和底层驱动器：
 
