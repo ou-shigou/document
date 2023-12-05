@@ -701,6 +701,11 @@ Filesystem                Size      Used Available Use% Mounted on
 /dev/sdb               1007.4G      5.2G   1002.2G   1% /var/lib/tikv
 ... ...
 ```
+### 安全なDBアクセス方式の確立
+
+安全なDBアクセス方式としてAzure SQL ServerはID/PWDの方式よりAD認証（mngid）のアクセス方式を提供しています、又イオンのコンテナ化プロジェクトでAD認証用のmngidもAzure Key Vaultに保存されることにしています。
+TiDBではAD認証が提供できないのですが、ID/PWDを含まれているアクセスストリングがAzure Key Vaultに保存する形で安全なアクセス方式を確立としています。
+
 ## TiDB性能検証 
 ### 性能検証概要
 TiDB検証テストデータ準備(#TiDB検証テストデータ準備)の節にも紹介したように三つのワークフローにそれぞれ5000万件のフローテストデータを作成しました。以下の各テーブルのデータボリューム詳細情報です。
